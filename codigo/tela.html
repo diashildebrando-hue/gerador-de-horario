@@ -1,0 +1,675 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Gerador de horário escolar gratuito do Colégio 29 de Abril: aulas, hora-atividade, equipamentos, aulas vagas e cruzamento com outras escolas. Funciona sem internet.">
+<title>Gerador de Horário 29 de Abril</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 64 64%27%3E%3Crect width=%2764%27 height=%2764%27 rx=%2712%27 fill=%27%231E3A5F%27/%3E%3Cpath d=%27M14 20h36M14 32h36M14 44h36M26 14v36M38 14v36%27 stroke=%27%23fff%27 stroke-width=%274%27/%3E%3C/svg%3E">
+<style>
+:root{
+  --bg:#F3F5F8; --surface:#FFFFFF; --surface2:#EEF2F6; --border:#D5DCE4; --text:#17212B; --dim:#5A6878;
+  --primary:#1E3A5F; --primary2:#2D5A8E; --accent:#167F78; --warn:#9A4513; --warnbg:#FCEBDD; --bad:#B42318; --badbg:#FDE8E6; --ok:#157347; --okbg:#E1F3E8;
+  --ha:#226B41; --habg:#D8F0E1; --form:#6A3D9A; --formbg:#EADFF6; --x:#5F6B78; --xbg:#EEF0F2; --pref:#C98A00; --prefbg:#FFF2CC; --ext:#2F3F73; --extbg:#E2E7F3;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 "Segoe UI",system-ui,-apple-system,Roboto,Arial,sans-serif}
+header{background:var(--primary);color:#fff;padding:14px 20px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+header h1{font-size:18px;margin:0;font-weight:700;letter-spacing:.2px}
+header .sub{font-size:12.5px;opacity:.8}
+nav{display:flex;gap:2px;flex-wrap:wrap;background:var(--surface);border-bottom:1px solid var(--border);padding:0 12px;position:sticky;top:0;z-index:5}
+nav button{background:none;border:none;padding:11px 10px;font:inherit;font-weight:600;color:var(--dim);border-bottom:3px solid transparent;cursor:pointer}
+nav button.on{color:var(--primary);border-bottom-color:var(--primary)}
+nav .badge{display:inline-block;min-width:18px;padding:0 5px;border-radius:9px;background:var(--bad);color:#fff;font-size:11px;margin-left:4px;text-align:center}
+nav .badge.vg{background:var(--warn)}
+.subnav{display:flex;gap:6px;flex-wrap:wrap;align-items:center;background:var(--surface2);border-bottom:1px solid var(--border);padding:7px 12px}
+.subnav .sntit{font-weight:700;color:var(--dim);font-size:13px;margin-right:4px}
+.subnav button{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:5px 12px;font:inherit;font-size:14px;font-weight:600;color:var(--text);cursor:pointer}
+.subnav button.on{background:var(--primary);border-color:var(--primary);color:#fff}
+.subnav button:focus-visible{outline:3px solid #F5B400;outline-offset:1px}
+.subnav .badge{display:inline-block;min-width:18px;padding:0 5px;border-radius:9px;background:var(--bad);color:#fff;font-size:11px;margin-left:4px;text-align:center} .subnav .badge.vg{background:var(--warn)}
+body.ocupado .subnav button:not(.on){opacity:.45;cursor:not-allowed}
+.c[draggable=true]{cursor:grab}
+#apCelDlg{position:fixed;top:90px;right:24px;width:370px;max-width:calc(100vw - 24px);max-height:calc(100vh - 100px);overflow:auto;background:var(--surface);border:2px solid #E0A800;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.28);z-index:62;font-size:14px}
+#apCelDlg .aptit{display:flex;align-items:center;gap:8px;background:#E0A800;color:#000;padding:8px 10px;font-weight:700;cursor:move;touch-action:none;border-radius:9px 9px 0 0} #apCelDlg .aptit button{margin-left:auto} #apCelDlg .apcorpo{padding:10px 12px}
+.apcelsel{outline:4px solid #E0A800!important;outline-offset:-4px}
+#apTabDlg{position:fixed;top:90px;right:24px;width:360px;max-width:calc(100vw - 24px);max-height:calc(100vh - 100px);overflow:auto;background:var(--surface);border:2px solid #E0A800;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.28);z-index:61;font-size:14px}
+#apTabDlg .aptit{display:flex;align-items:center;gap:8px;background:#E0A800;color:#000;padding:8px 10px;font-weight:700;cursor:move;touch-action:none;border-radius:9px 9px 0 0} #apTabDlg .aptit button{margin-left:auto} #apTabDlg .apcorpo{padding:10px 12px}
+#apPainel{position:fixed;top:70px;right:16px;width:330px;max-width:calc(100vw - 24px);max-height:calc(100vh - 90px);overflow:auto;background:var(--surface);border:2px solid var(--primary);border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.25);z-index:60;font-size:14px}
+#apPainel .aptit{display:flex;align-items:center;gap:8px;background:var(--primary);color:#fff;padding:8px 10px;font-weight:700;cursor:move;touch-action:none;border-radius:9px 9px 0 0}
+#apPainel .aptit .small{color:#fff;opacity:.85;font-weight:400} #apPainel .aptit button{margin-left:auto}
+#apPainel .apcorpo{padding:10px 12px} .apctl{display:block;margin:6px 0} .apctl input{width:100%} .apctl output{float:right;font-weight:700}
+.apalin{margin:8px 0;padding:6px 0;border-top:1px solid var(--border);border-bottom:1px solid var(--border)} .apalin .row{gap:4px;margin-top:4px} .apalin .small{min-width:46px}
+.apcores{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:6px} .apcores label{display:flex;align-items:center;justify-content:space-between;gap:6px;font-size:13px} .apcores input{width:42px;height:30px;border:none;padding:0;background:none}
+.apmodo{display:block;background:#FFF4CE;border:1px solid #E0A800;border-radius:8px;padding:6px 8px}
+body.aparrumar main{outline:3px dashed #E0A800;outline-offset:-3px} body.aparrumar main *{cursor:text}
+body.aparrumar table.g td .c{cursor:nwse-resize!important}
+[data-apk]{position:relative} .apalca{position:absolute;top:-12px;left:10px;background:#E0A800;color:#000;font-size:12px;font-weight:700;padding:2px 8px;border-radius:6px;cursor:grab!important;touch-action:none;z-index:5}
+.apgrip{position:absolute;top:0;right:-5px;width:10px;height:100%;cursor:ew-resize!important;background:repeating-linear-gradient(0deg,#E0A800,#E0A800 6px,transparent 6px,transparent 10px);touch-action:none;z-index:5}
+.apmovendo{opacity:.6;outline:3px solid #E0A800}
+#apDica{position:fixed;background:#000;color:#fff;font-size:12px;padding:3px 7px;border-radius:5px;z-index:70;pointer-events:none}
+.appop{position:fixed;width:320px;background:var(--surface);border:2px solid #E0A800;border-radius:10px;padding:10px;box-shadow:0 8px 24px rgba(0,0,0,.3);z-index:65}
+#edMenu{position:fixed;z-index:80;width:380px;max-width:calc(100vw - 16px);max-height:70vh;overflow:auto;background:var(--surface);border:2px solid var(--primary);border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,.3);font-size:13.5px;padding-bottom:4px}
+#edMenu .edmtit{background:var(--primary);color:#fff;padding:7px 10px;font-weight:700;border-radius:7px 7px 0 0} #edMenu .edmtit span{font-weight:400;opacity:.9}
+#edMenu button{display:block;width:100%;text-align:left;background:none;border:none;border-bottom:1px solid var(--border);padding:7px 10px;font:inherit;cursor:pointer;color:var(--text)}
+#edMenu button:hover,#edMenu button:focus{background:var(--surface2);outline:none} #edMenu button:focus-visible{outline:3px solid #F5B400;outline-offset:-3px}
+#edMenu button[disabled]{opacity:.45;cursor:not-allowed} #edMenu .ednok{background:#FFF8E1}
+#edMenu .edmsec{padding:8px 10px 4px;font-weight:700;color:var(--dim);font-size:12.5px} #edMenu .edmout summary{padding:7px 10px;cursor:pointer;font-weight:600}
+.edok{color:#157347;font-weight:700} .edno{color:#B00000;font-weight:700} .edfalta{background:#E1F3E8;color:#0F5132;border-radius:6px;padding:0 5px;font-size:12px}
+#tdFundo{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:85}
+#tdPainel{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:720px;max-width:calc(100vw - 20px);max-height:calc(100vh - 40px);overflow:auto;background:var(--surface);border:2px solid var(--primary);border-radius:12px;box-shadow:0 14px 40px rgba(0,0,0,.35);z-index:90}
+#tdPainel .tdtit{display:flex;gap:8px;align-items:center;justify-content:space-between;background:var(--primary);color:#fff;padding:9px 12px;font-weight:700;position:sticky;top:0;border-radius:9px 9px 0 0}
+#tdPainel .tdcorpo{padding:12px}
+#edBarra{position:sticky;z-index:6;background:#FFF2A8;border-bottom:3px solid #E0A800;padding:8px 16px;color:#3d2f00}
+#edBarra .edtit{font-size:15px} #edBarra .ederros{margin-top:6px;max-height:200px} #edBarra .edbandeja{margin-top:6px;background:#fff}
+body.editando main{outline:3px solid #E0A800;outline-offset:-3px}
+#edToast{position:fixed;top:80px;left:50%;transform:translateX(-50%);z-index:95;background:#FFF2A8;border:3px solid #E0A800;color:#3d2f00;border-radius:10px;padding:12px 16px;box-shadow:0 10px 30px rgba(0,0,0,.3);max-width:min(560px,calc(100vw - 24px));font-size:15px}
+#edDlgFundo{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:96}
+#edDlg{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:97;width:680px;max-width:calc(100vw - 20px);max-height:calc(100vh - 40px);overflow:auto}
+#edDlg .edpergunta{margin:0;box-shadow:0 14px 40px rgba(0,0,0,.4)} .eddlglista{background:#fff;border:1px solid #D50000;border-radius:8px;max-height:260px;overflow:auto;padding:4px 8px} .eddlglista ul{margin:4px 0;padding-left:18px}
+.ednovo{background:#D50000;color:#fff;border-radius:4px;padding:0 4px;font-size:11px}
+#apMenu{position:fixed;z-index:88;width:340px;max-width:calc(100vw - 16px);max-height:80vh;overflow:auto;background:var(--surface);border:2px solid #E0A800;border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,.3);font-size:13.5px;padding-bottom:4px}
+#apMenu .edmtit{background:#E0A800;color:#000;padding:7px 10px;font-weight:700;border-radius:7px 7px 0 0} #apMenu .edmtit span{font-weight:400;font-size:12px}
+#apMenu button{display:block;width:100%;text-align:left;background:none;border:none;border-bottom:1px solid var(--border);padding:7px 10px;font:inherit;cursor:pointer;color:var(--text)}
+#apMenu button:hover,#apMenu button:focus{background:var(--surface2);outline:none} #apMenu button:focus-visible{outline:3px solid #F5B400;outline-offset:-3px} #apMenu button[disabled]{opacity:.45;cursor:not-allowed}
+#apMenu .edmsec{padding:8px 10px 4px;font-weight:700;color:var(--dim);font-size:12.5px}
+body.aparrumar #nav button,body.aparrumar #subnav button{cursor:grab!important;outline:2px dashed #E0A800;outline-offset:-2px;touch-action:none}
+.apaviso{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:#1E3A5F;color:#fff;padding:10px 16px;border-radius:8px;z-index:99;font-size:14px;max-width:90vw}
+.pcomp{display:block;font-weight:500;font-size:13px;margin-top:2px;color:var(--dim)}
+table.g th.gtit{font-size:13px;font-weight:700}
+table.g .brkc{font-size:14px;font-weight:700}
+#gOut h3{text-align:center}
+.btn.danger{background:#B42318;border-color:#B42318;color:#fff}
+.edpainel{position:sticky;left:0;background:var(--surface);border:2px solid var(--primary);border-radius:10px;padding:10px 12px;margin-bottom:10px}
+.edvaga{border:2px dashed var(--x);border-radius:8px;padding:7px 12px;font-weight:600;color:var(--x);cursor:pointer;background:var(--xbg)}
+.edvaga.alvo{outline:3px dashed var(--bad);color:var(--bad)}
+.ederros{background:#FFEB3B;color:#B00000;border:2px solid #D50000;border-radius:8px;padding:8px 12px;margin-top:8px;max-height:220px;overflow:auto}
+.ederros ul{margin:4px 0 0;padding-left:20px} .ederros a{color:#B00000;text-decoration:underline}
+table.g td .c.ederr{background:#FFEB3B!important;color:#C00000!important;box-shadow:inset 0 0 0 3px #D50000}
+table.g td .c.ederr b,table.g td .c.ederr small{color:#C00000!important}
+table.g td .c.edmud:not(.ederr){box-shadow:inset 0 0 0 2px var(--accent)}
+.c.pisca{animation:edpisca .4s 4} @keyframes edpisca{50%{transform:scale(1.12)}}
+.edbandeja{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;margin-top:8px}
+.edchip{display:inline-block;padding:5px 10px;border-radius:14px;border:1px solid rgba(0,0,0,.25);cursor:grab;font-size:13px;margin:2px}
+.edchip.sel{outline:3px solid var(--accent)}
+.edpergunta{background:#FFEB3B;color:#3d0000;border:3px solid #D50000;border-radius:10px;padding:12px 14px;margin-top:8px} .c.arrastando{opacity:.45} .c.alvo{outline:3px dashed var(--primary);outline-offset:-3px}
+main{padding:18px 20px 60px;max-width:1500px;margin:0 auto}
+.ctxbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:8px 20px;background:#FFF8E6;border-bottom:1px solid #F0DFB5}
+.avb{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:8px 20px;background:#E8F3FF;border-bottom:1px solid #C5DCF5;font-size:13.5px}
+textarea{font:inherit;padding:8px;border:1px solid var(--border);border-radius:6px;width:100%}
+.avrow{border:1px solid var(--border);border-radius:10px;padding:10px;margin-bottom:10px;background:var(--surface)}
+.avrow .hd{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:6px}
+.chiplist{display:flex;flex-wrap:wrap;gap:6px;max-height:220px;overflow:auto;padding:4px}
+.chiplist label{display:flex;gap:5px;align-items:center;border:1px solid var(--border);border-radius:16px;padding:3px 9px;font-size:12.5px;background:var(--surface)}
+.chiplist label.af{border-color:var(--warn);background:var(--warnbg)}
+.ctxbar input{font:inherit;padding:5px 8px;border:1px solid var(--border);border-radius:6px}
+#ctxQuem{min-width:230px}
+@media (max-width:900px){ .ctxbar>span{display:none} #ctxQuem{min-width:0;flex:1 1 150px} #ctxMotivo{min-width:0!important;flex:1 1 150px!important} }
+@media (max-width:1420px){ nav button{padding:11px 6px;font-size:13px} nav .badge{margin-left:3px;padding:0 4px} nav{padding:0 6px} }
+section{display:none} section.on{display:block}
+h2{font-size:17px;margin:0 0 4px;color:var(--primary)}
+p.lead{margin:0 0 14px;color:var(--dim);max-width:85ch}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:14px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.row.end{align-items:flex-end}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}
+.stat{background:var(--surface2);border-radius:8px;padding:10px 12px}
+.stat b{display:block;font-size:22px;font-variant-numeric:tabular-nums}
+.stat span{font-size:12px;color:var(--dim)}
+.stat.bad b{color:var(--bad)} .stat.ok b{color:var(--ok)} .stat.warn b{color:var(--warn)}
+.btn{border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:7px;padding:8px 13px;font:inherit;font-weight:600;cursor:pointer}
+.btn:hover{border-color:var(--primary2)}
+.btn.pri{background:var(--primary);border-color:var(--primary);color:#fff}
+.btn.pri:hover{background:var(--primary2)}
+.btn.red{background:var(--bad);border-color:var(--bad);color:#fff}
+.btn.sm{padding:4px 9px;font-size:12.5px}
+.btn:disabled{opacity:.5;cursor:default}
+select,input[type=number],input[type=text],input[type=date]{font:inherit;padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:#fff;color:var(--text);max-width:100%}
+input[type=number]{width:80px}
+label{font-size:13px}
+label.chk{display:flex;gap:8px;align-items:flex-start;padding:6px 0;font-size:14px}
+.prog{height:10px;background:var(--surface2);border-radius:6px;overflow:hidden;flex:1;min-width:200px}
+.prog i{display:block;height:100%;width:0;background:var(--accent);transition:width .2s}
+.msg{padding:10px 12px;border-radius:8px;margin:8px 0;font-size:13.5px}
+.msg.ok{background:var(--okbg);color:var(--ok)} .msg.bad{background:var(--badbg);color:var(--bad)} .msg.warn{background:var(--warnbg);color:var(--warn)} .msg.info{background:var(--surface2);color:var(--dim)}
+.plist{max-height:340px;overflow:auto;border:1px solid var(--border);border-radius:8px}
+.plist .pitem{border-bottom:1px solid var(--surface2);font-size:13px}
+.plist.aberta{max-height:none}
+.plink{display:block;width:100%;text-align:left;background:none;border:none;padding:7px 10px;font:inherit;color:inherit;cursor:pointer}
+.plink:hover{background:var(--surface2)}
+.pitem.on>.plink{background:#E8F3FF;font-weight:600}
+.pitem.visto{opacity:.65}
+.pseta{float:right;font-size:11.5px;color:var(--primary2);font-weight:700;margin-left:8px}
+.pdet{padding:4px 12px 12px;background:#F7FAFD;border-top:1px dashed var(--border)}
+.popt{display:flex;gap:10px;align-items:center;justify-content:space-between;border:1px solid var(--border);border-radius:8px;padding:8px 10px;margin:6px 0;background:#fff}
+.popt.bom{border-color:#9FD3B4;background:#F3FBF6}
+.popt.ruim{border-color:#F0C4A8;background:#FFF8F3}
+.popt .btn{flex:none}
+.tag{display:inline-block;font-size:11px;font-weight:700;padding:1px 7px;border-radius:9px;margin-right:6px;text-transform:uppercase;letter-spacing:.3px}
+.tag.rigida{background:var(--badbg);color:#8F1C13} .tag.regra{background:var(--warnbg);color:#8A3D10} .tag.preferencia{background:var(--prefbg);color:#7a5a00}
+.chip{display:inline-block;font-size:12px;font-weight:700;padding:2px 9px;border-radius:10px;background:var(--surface2);color:var(--primary);margin:2px}
+.pill{display:inline-block;padding:2px 9px;border-radius:10px;font-size:12px;font-weight:700}
+.scroll{overflow-x:auto}
+table.g{border-collapse:collapse;font-size:12px}
+table.g th,table.g td{border:1px solid var(--border);text-align:center;padding:0}
+table.g th{background:var(--surface2);padding:5px 6px;font-weight:700;color:var(--primary)}
+table.g th.tm{font-weight:600;color:var(--dim);font-size:11px;white-space:nowrap;font-variant-numeric:tabular-nums}
+table.g td{height:1px;vertical-align:middle}
+table.g td .c{min-width:171px;min-height:30px;height:100%;box-sizing:border-box;padding:3px 4px;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;line-height:1.15}
+table.g td .c b{font-size:11.5px} table.g td .c small{font-size:10.5px}
+table.g td .c.sel{outline:3px solid var(--accent);outline-offset:-3px}
+table.g td .c.clk{cursor:pointer}
+table.g td .c.conf{box-shadow:inset 0 0 0 2px var(--bad)}
+.c.ha{background:var(--habg);color:var(--ha);font-weight:700}
+.c.x{background:var(--xbg);color:var(--x)}
+.c.fo{background:var(--formbg);color:var(--form);font-weight:700}
+.c.pf{background:var(--prefbg);color:#7a5a00}
+.c.ext{background:repeating-linear-gradient(135deg,var(--extbg),var(--extbg) 6px,#D5DCEC 6px,#D5DCEC 12px);color:var(--ext);font-weight:700;font-size:11px}
+.c.ext small{font-weight:500;font-size:10px}
+.c .extw{color:var(--bad);font-weight:800;opacity:1}
+/* tabelas que viram cartões no celular */
+@media (max-width:700px){
+  table.t.cards,table.t.cards tbody,table.t.cards tr,table.t.cards td{display:block;width:100%}
+  table.t.cards{border:none}
+  table.t.cards tr:first-child{display:none}
+  table.t.cards tr{border:1px solid var(--border);border-radius:8px;margin-bottom:8px;background:#fff;overflow:hidden}
+  table.t.cards td{border:none;border-bottom:1px solid var(--surface2);padding:5px 10px}
+  table.t.cards td[data-l]:not([data-l=""])::before{content:attr(data-l) ": ";font-weight:700;color:var(--dim);font-size:12px}
+  table.t.cards select{width:100%;max-width:100%}
+  table.t.cards td.right{text-align:left}
+}
+.c.vg{background:repeating-linear-gradient(45deg,#FDE8E6,#FDE8E6 6px,#F9D3CF 6px,#F9D3CF 12px)!important;color:var(--bad)}
+.c.vg b{font-weight:800}
+.c.sb{background:#FFF4CC!important;outline:1px dashed #B58B00;outline-offset:-3px}
+.brkc{background:repeating-linear-gradient(45deg,#F1F4F7,#F1F4F7 6px,#E7ECF1 6px,#E7ECF1 12px);color:var(--dim);font-size:11px;font-weight:600;padding:3px 6px;text-align:center;display:flex;align-items:center;justify-content:center;box-sizing:border-box;height:100%}
+tr.brk th{font-size:10.5px}
+.c .tmx{font-size:10px;opacity:.75;font-variant-numeric:tabular-nums}
+.lock{position:relative} .lock::after{content:"🔒";position:absolute;top:1px;right:2px;font-size:9px}
+.dbrk{font-size:11.5px;color:var(--dim);margin:2px 0 0}
+.dbrk b{color:var(--ok)} .dbrk i{color:var(--bad);font-style:normal;font-weight:700}
+.dayhead{background:var(--primary)!important;color:#fff!important}
+.dayhead .vt{writing-mode:vertical-rl;text-orientation:upright;white-space:nowrap;letter-spacing:0;line-height:1;font-size:15px;font-weight:800;display:inline-block;padding:4px 6px}
+table.g th.dayhead.dia{background:#E3E3E3!important;color:#000!important;font-weight:900}
+.dayhead .vd{display:block;font-size:11px;font-weight:600;margin-top:4px}
+table.g tr.dsep>th,table.g tr.dsep>td{border-top:4px solid #000!important}
+.two{display:grid;grid-template-columns:280px 1fr;gap:14px}
+.two.w{grid-template-columns:320px 1fr}
+@media (max-width:900px){.two,.two.w{grid-template-columns:1fr}}
+@media (max-width:700px){ .row>label{max-width:100%;min-width:0} .row>label>select{width:100%} .weekbox{flex-wrap:wrap;max-width:100%} .weekbox select{min-width:0;flex:1 1 120px} .two>*{min-width:0} #pDet,#tCardDisc{overflow-x:auto} }
+.plistsel{max-height:600px;overflow:auto;border:1px solid var(--border);border-radius:8px;background:var(--surface)}
+.plistsel button{display:flex;width:100%;gap:8px;align-items:center;text-align:left;background:none;border:none;border-bottom:1px solid var(--surface2);padding:7px 10px;font:inherit;cursor:pointer}
+.plistsel button.on{background:var(--surface2);font-weight:700}
+.dot{width:14px;height:14px;border-radius:4px;border:1px solid rgba(0,0,0,.15);flex:none}
+.legend{display:flex;gap:12px;flex-wrap:wrap;font-size:12px;color:var(--dim);margin:8px 0}
+.legend span{display:flex;gap:5px;align-items:center}
+.legend .sw{display:inline-block;width:26px;height:14px;border-radius:3px}
+/* padrão de tabela: bordas, cabeçalho colorido e linhas alternadas */
+table.t{border-collapse:collapse;width:100%;font-size:13px;border:1px solid #B9C4D0}
+table.t th{text-align:left;font-size:12.5px;font-weight:700;color:#fff;background:var(--primary);padding:6px 9px;border:1px solid #2C4B73;vertical-align:middle}
+table.t td{padding:5px 9px;border:1px solid #D5DCE4;vertical-align:middle;background:#fff}
+table.t tr:nth-child(even) td{background:#F2F5F9}
+table.t tr:hover td{background:#E6EEF8}
+table.t td .brkc{margin:-5px -9px}
+table.t.resumo{width:auto;table-layout:fixed}
+table.t.resumo td,table.t.resumo th{padding:4px 10px}
+table.t .c,table.t th.c{text-align:center}
+.right{text-align:right} .num{font-variant-numeric:tabular-nums}
+.small{font-size:12px;color:var(--dim)}
+.eqcell{font-size:11px;line-height:1.25;padding:3px 4px;min-width:110px;text-align:left}
+.eqcell div{white-space:nowrap}
+.vgrid td{padding:2px!important}
+.vchip{display:block;min-width:70px;padding:4px;border-radius:5px;border:1px solid var(--border);font-size:12px;cursor:pointer;background:#fff;line-height:1.2}
+.vchip.on{background:var(--badbg);color:var(--bad);border-color:#F0A9A1;font-weight:700}
+.vchip.off{color:#6B7682;text-decoration:line-through}
+.impgrp{border:1px solid var(--border);border-radius:8px;padding:8px 10px;margin-bottom:8px}
+.impgrp h4{margin:0 0 4px;font-size:12.5px;color:var(--primary);text-transform:uppercase;letter-spacing:.3px}
+.impgrp label.chk{padding:3px 0}
+.weekbox{display:flex;gap:6px;align-items:center;background:var(--surface2);border-radius:8px;padding:4px 8px}
+.avb.alerta{background:#FDE8E6;border-bottom-color:#F0A9A1;color:#7A1A12}
+body.ocupado nav button:not(.on){opacity:.45;cursor:not-allowed}
+body.ocupado #s-inicio .card:first-of-type{outline:2px solid var(--accent)}
+:focus-visible{outline:3px solid #2D5A8E;outline-offset:2px}
+.btn:focus-visible,nav button:focus-visible{outline:3px solid #F5B400;outline-offset:1px}
+table.g.compacto td .c{min-width:62px;min-height:30px;padding:2px}
+table.g.compacto td .c b{font-size:10.5px} table.g.compacto td .c small{font-size:9.5px}
+table.g.compacto th{padding:3px 3px;font-size:11px}
+table.g.compacto .dayhead .vt{font-size:12px;padding:2px 3px}
+.lblf{display:inline-flex;flex-direction:column;gap:2px;font-size:12px;color:var(--dim)}
+/* telas pequenas (celular) */
+@media (max-width:700px){
+  header{padding:8px 12px;gap:6px}
+  header h1{font-size:15px}
+  header .sub{display:none}
+  nav{flex-wrap:nowrap;overflow-x:auto;padding:0 4px;scrollbar-width:thin;-webkit-overflow-scrolling:touch}
+  nav button{white-space:nowrap;padding:10px 10px;flex:none}
+  .subnav{flex-wrap:nowrap;overflow-x:auto;padding:6px 8px}
+  .subnav button{white-space:nowrap;flex:none}
+  .ctxbar{padding:6px 10px;gap:6px}
+  .ctxbar>span{display:none}
+  .ctxbar input{flex:1 1 140px;min-width:0!important}
+  .avb{padding:6px 10px}
+  main{padding:12px 10px 60px}
+  .card{padding:12px;border-radius:8px}
+  h2{font-size:16px}
+  p.lead{font-size:13px}
+  .grid2{grid-template-columns:repeat(auto-fit,minmax(140px,1fr))}
+  .prog{min-width:120px}
+}
+/* telas de toque (celular, tablet, Chromebook com toque): botões e caixas maiores para o dedo */
+@media (pointer:coarse){
+  .btn{min-height:40px}
+  .btn.sm{min-height:36px;padding:6px 11px}
+  nav button,.subnav button{min-height:44px}
+  select,input[type=number],input[type=text],input[type=date]{min-height:40px}
+  input[type=checkbox],input[type=radio]{width:20px;height:20px}
+  .plistsel button{min-height:42px}
+}
+@media print{
+  header,nav,.noprint,.ctxbar,#avisoBanner,#apPainel,#apTabDlg,#apCelDlg,.apalca,.apgrip,#apDica,.appop{display:none!important} body.aparrumar main{outline:none}
+  main{padding:0;max-width:none}
+  section:not(.on){display:none!important} section.on,section.print{display:block!important}
+  #salvarBanner{display:none!important}
+  .scroll{overflow:visible!important}
+  .card{border:none;padding:0}
+  table.g{font-size:9px} table.g td .c{min-width:60px;min-height:26px}
+  .pb{page-break-after:always}
+  *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}
+</style>
+</head>
+<body>
+<header>
+  <div><h1>Gerador de Horário — Colégio 29 de Abril</h1><div class="sub">Aulas, hora-atividade, equipamentos e aulas vagas. Funciona sem internet; os dados ficam salvos neste computador.</div></div>
+</header>
+<nav id="nav">
+  <button data-s="cad">Cadastro</button>
+  <button data-s="inicio" class="on">Gerar</button>
+  <button data-s="grade">Grade</button>
+  <button data-s="avisos">Avisos</button>
+  <button data-s="hist">Histórico</button>
+  <button data-s="rel">Relatórios</button>
+</nav>
+<div id="subnav" class="subnav noprint" role="navigation" aria-label="Partes desta aba" hidden></div>
+<div id="edBarra" class="noprint" hidden aria-live="polite"></div>
+<div class="ctxbar noprint"><span class="small"><b>Registro das mudanças</b> (vai para o Histórico):</span>
+  <input type="text" id="ctxQuem" placeholder="Solicitado por (quem pediu)" aria-label="Solicitado por"> <input type="text" id="ctxMotivo" placeholder="Motivo da mudança" aria-label="Motivo da mudança" style="flex:1;min-width:220px"></div>
+<div id="salvarBanner" class="noprint" role="alert"></div>
+<div id="avisoBanner" class="noprint" aria-live="polite"></div>
+<main>
+
+<!-- ============ GERAR ============ -->
+<section id="s-inicio" class="on">
+  <h2>Montar o horário de aulas</h2>
+  <p class="lead">O gerador distribui todas as aulas de todas as turmas sem colocar professor em dois lugares ao mesmo tempo (pelo horário real de cada aula), respeitando os horários em que cada um não pode e as regras da escola. Quando alguma regra não puder ser cumprida, ele mostra qual e por quê.</p>
+  <div class="card">
+    <div class="grid2" id="stats"></div>
+  </div>
+  <div class="card">
+    <div id="iEdBar" class="row" style="margin-bottom:10px"></div>
+    <div class="row">
+      <button class="btn pri" id="bAjustar">Ajustar a grade atual</button>
+      <button class="btn" id="bZero">Gerar do zero</button>
+      <button class="btn" id="bParar" disabled>Parar</button>
+      <div class="prog"><i id="progBar"></i></div><span id="progTxt" class="small"></span>
+    </div>
+    <p class="small" style="margin:10px 0 0">“Ajustar” parte da grade que está em uso e muda o mínimo possível (mais rápido). “Gerar do zero” embaralha tudo e monta de novo (leva até um minuto). Depois de pronta, você ainda pode trocar aulas na mão na aba Grade.</p>
+  </div>
+  <div class="card">
+    <h3 style="font-size:15px;margin:0 0 4px;color:var(--primary)">Ajustar uma aula só</h3>
+    <p class="small" style="margin:0 0 8px">Precisa tirar um professor de uma aula? Escolha o professor e o dia e clique na aula. O gerador mostra as possibilidades (o que muda em cada uma) e só mexe quando você clicar em Aplicar. Na aba Grade, o mesmo aparece clicando com o <b>botão direito</b> numa aula.</p>
+    <div id="tdGerar"></div>
+  </div>
+  <div class="card">
+    <div class="row" style="justify-content:space-between"><h2 style="margin:0">Pontos de atenção da grade atual</h2>
+      <div class="row"><label class="small"><input type="checkbox" id="fR" checked> rígidas</label><label class="small"><input type="checkbox" id="fG" checked> regras</label><label class="small"><input type="checkbox" id="fP" checked> preferências</label></div></div>
+    <p class="small"><b>Clique em um ponto</b> para ver o que é, onde está e as opções de ajuste. Rígida = não pode acontecer (ex.: professor em dois lugares). Regra = regra da escola quebrada porque não havia outro jeito. Preferência = pedido do professor que não deu para atender.</p>
+    <div id="pAplicado"></div>
+    <div class="plist" id="plist" tabindex="0" aria-label="Lista de pontos de atenção"></div>
+  </div>
+</section>
+
+<!-- ============ GRADE ============ -->
+<section id="s-grade">
+  <h2>Grade de aulas</h2>
+  <p class="lead">Veja o quadro geral de cada período, a grade de uma turma ou a de um professor. Para mudar a grade, clique em <b>✏️ Editar</b>: arraste as aulas para trocar de lugar (no quadro geral ou por turma) ou use o <b>botão direito</b> numa aula. O gerador mostra na hora o que ficou batendo, sobrando ou faltando, e a grade só vale depois de <b>Salvar</b>. Escolha uma semana para ver as aulas vagas e os substitutos daquela semana.</p>
+  <div class="card noprint">
+    <div class="row">
+      <select id="gView" aria-label="O que mostrar"><option value="geral">Quadro geral do período</option><option value="turma">Por turma</option><option value="prof">Por professor</option></select>
+      <select id="gPer" aria-label="Período"></select>
+      <select id="gTurma" aria-label="Turma"></select>
+      <select id="gProf" aria-label="Professor"></select>
+      <span class="weekbox"><span class="small">Mostrar:</span><select id="gSemana" aria-label="Semana"></select><button class="btn sm" id="gSemAnt" title="Semana anterior" aria-label="Semana anterior">‹</button><button class="btn sm" id="gSemProx" title="Próxima semana" aria-label="Próxima semana">›</button></span>
+      <label class="small" title="Diminui as colunas para o quadro caber em telas menores (Chromebook, notebook)"><input type="checkbox" id="gCompacto"> Caber na tela</label>
+    </div>
+    <div id="gEdBar" class="row" style="margin-top:8px"></div>
+    <div id="gMsg"></div>
+  </div>
+  <div class="card scroll" id="gOut" tabindex="0" aria-label="Grade"></div>
+</section>
+
+<!-- ============ AULAS VAGAS ============ -->
+<section id="s-vagas">
+  <h2>Grade: aulas vagas e ausências</h2>
+  <p class="lead">Quando um professor não vem, marque a ausência aqui. As aulas dele nesses dias aparecem como <b style="color:var(--bad)">AULA VAGA</b> (ou com o nome de quem vai substituir). A grade oficial não muda: quando a data passa, tudo volta ao normal sozinho.</p>
+  <div class="card" id="vForm"></div>
+  <div class="card">
+    <div class="row" style="justify-content:space-between"><h3 style="font-size:14px;margin:0">Aulas vagas de um dia</h3>
+      <div class="row"><input type="date" id="vDia" aria-label="Dia das aulas vagas"><button class="btn sm" id="vPdfDia">PDF do dia</button><button class="btn sm" id="vPdfSem">PDF da semana</button><button class="btn sm" id="vWa">Avisar equipe (WhatsApp)</button><button class="btn sm" id="vEm">Avisar equipe (e-mail)</button></div></div>
+    <div id="vDiaOut" style="margin-top:8px"></div>
+    <div id="vEnvMsg"></div>
+  </div>
+  <div class="card">
+    <h3 style="font-size:14px;margin:0 0 6px">Ausências marcadas</h3>
+    <div class="row" style="margin-bottom:6px"><label class="small"><input type="checkbox" id="vVerEnc"> Mostrar também as encerradas</label></div>
+    <div class="scroll" tabindex="0"><table class="t" id="vLista"></table></div>
+    <div class="msg info">As aulas vagas não mudam a grade oficial, a hora-atividade nem os equipamentos. Tudo fica registrado no Histórico com quem pediu e o motivo.</div>
+  </div>
+</section>
+
+<!-- ============ HA ============ -->
+<section id="s-ha">
+  <h2>Hora-atividade (HA)</h2>
+  <p class="lead">Escolha um professor ou “Todos os professores” para ver o resumo e a grade com a HA. Clique em “Gerar HA” e o gerador encaixa as HAs nos horários livres, perto das aulas. A quantidade segue a tabela oficial da SEED (HA 15/5). Prioridade: janelas entre aulas, depois horários encostados nas aulas, depois o mesmo dia; tenta não criar dia novo, para o professor ficar com um dia livre. Não usa horários marcados como “não pode” ou “formador”.</p>
+  <div class="card noprint">
+    <div class="row">
+      <select id="haProf" aria-label="Professor da hora-atividade"></select>
+      <button class="btn pri" id="bHA">Gerar HA</button>
+    </div>
+    <div id="haMsg"></div>
+  </div>
+  <div class="card noprint">
+    <h3 style="font-size:14px;margin:0 0 4px">Montar a HA na mão, uma a uma</h3>
+    <p class="small" style="margin:0 0 8px">Escolha um professor acima (não “Todos”) e clique nos horários livres da grade dele para colocar ou tirar uma HA. Depois indique <b>onde</b> ele vai cumprir cada uma. Funciona junto com o “Gerar HA”: você pode gerar e depois ajustar à mão.</p>
+    <div class="row"><label class="small"><input type="checkbox" id="haModo"> Modo edição manual</label>
+      <label class="small">Local padrão deste professor <select id="haLocPad" aria-label="Local padrão da HA"></select></label>
+      <button class="btn sm" id="haLocTodos">Aplicar o local padrão em todas as HAs dele</button>
+      <button class="btn sm" id="haLimpar">Tirar todas as HAs dele</button></div>
+    <div id="haEdit" style="margin-top:10px"></div>
+    <details style="margin-top:10px"><summary class="small" style="cursor:pointer">Lista de locais de HA (editar)</summary>
+      <div class="row" style="margin-top:6px"><input type="text" id="haNovoLocal" placeholder="Novo local (ex.: Sala de planejamento)"><button class="btn sm" id="haAddLocal">Adicionar local</button></div>
+      <div id="haLocais" class="row" style="margin-top:6px"></div></details>
+  </div>
+  <div id="haOut"></div>
+</section>
+
+<!-- ============ EQUIPAMENTOS ============ -->
+<section id="s-equip">
+  <h2>Equipamentos e espaços</h2>
+  <p class="lead">Monta a reserva do laboratório de informática, da biblioteca, dos Chromebooks e tablets a partir da grade de aulas. A prioridade é por matéria: algumas usam em todas as aulas, outras uma vez por semana em cada turma. O Fundamental é atendido primeiro. Para “1 por turma”, dá preferência à última aula do dia.</p>
+  <div class="card noprint">
+    <div class="grid2">
+      <label>Chromebooks (quantidade)<br><input type="number" id="eqCh" min="0" placeholder="?"></label>
+      <label>Tablets (quantidade)<br><input type="number" id="eqTb" min="0" placeholder="?"></label>
+      <label>Chromebooks da robótica<br><input type="number" id="eqRb" min="0"></label>
+      <label>Laboratório de informática atende<br><select id="eqInf"><option value="M">Só Médio</option><option value="F">Só Fundamental</option><option value="FM">Os dois</option></select></label>
+      <label>Biblioteca atende<br><select id="eqBib"><option value="M">Só Médio</option><option value="F">Só Fundamental</option><option value="FM">Os dois</option></select></label>
+    </div>
+    <label class="chk"><input type="checkbox" id="eqTbBib"> Tablets só podem ser usados dentro da biblioteca</label>
+    <label class="chk"><input type="checkbox" id="eqChBib"> Chromebooks só podem ser usados dentro da biblioteca</label>
+    <p class="small">Quantidade em branco = o gerador considera que sempre tem aparelho suficiente (preencha para o resultado ficar real).</p>
+    <h3 style="font-size:14px;margin:14px 0 6px">Prioridade por matéria</h3>
+    <table class="t" id="eqPri"></table>
+    <div class="row" style="margin-top:8px"><select id="eqNewDisc" aria-label="Matéria"></select><select id="eqNewReg" aria-label="Regra de uso"><option value="todas">Todas as aulas</option><option value="1">1 por turma na semana</option></select><button class="btn sm" id="eqAdd">Adicionar</button></div>
+    <h3 style="font-size:14px;margin:14px 0 6px">Matérias que usam o kit da robótica</h3>
+    <div id="eqRobo" class="row"></div>
+    <div class="row" style="margin-top:14px"><button class="btn pri" id="bEq">Gerar horário dos equipamentos</button><button class="btn sm" id="eqPrint">Imprimir</button></div>
+    <div id="eqMsg"></div>
+  </div>
+  <div id="eqOut"></div>
+</section>
+
+<!-- ============ PROFESSORES ============ -->
+<section id="s-profs">
+  <h2>Professores</h2>
+  <p class="lead">Escolha um professor e clique nos horários para marcar: <b>livre</b> → <b>evitar</b> (preferência) → <b>não pode</b> → <b>formador</b> (sem aula e sem HA) → livre. Cada linha é um horário de aula que existe na aba Cadastro › Horários. Marcar um horário vale também para os horários parecidos de outros tipos (que se sobrepõem por mais de 10 minutos).</p>
+  <div class="two">
+    <div><input type="text" id="pBusca" placeholder="Buscar professor" aria-label="Buscar professor" style="width:100%;margin-bottom:8px"><div class="plistsel" id="pList" tabindex="0" aria-label="Lista de professores"></div>
+      <div class="row" style="margin-top:8px"><input type="text" id="pNovo" placeholder="Nome do novo professor" style="flex:1"><button class="btn sm" id="pAdd">Adicionar</button></div>
+      <div class="row" style="margin-top:8px"><button class="btn sm" id="pCores">Sortear cores novas (sem repetir)</button></div></div>
+    <div class="card" id="pDet"></div>
+  </div>
+</section>
+
+
+<!-- ============ OUTRAS ESCOLAS ============ -->
+<section id="s-externo">
+  <h2>Relatórios: outras instituições</h2>
+  <p class="lead">Muitos professores trabalham em mais de um colégio. Traga aqui o horário da instituição e o gerador confere se algum professor ficou em dois lugares ao mesmo tempo, ou sem tempo de chegar de uma escola à outra. Você também pode mandar o nosso horário para o outro colégio conferir.</p>
+  <div class="card">
+    <h3 style="font-size:14px;margin:0 0 6px">1. Trazer o horário da outra escola</h3>
+    <p class="small" style="margin:0 0 8px">Serve: o <b>“Relatório por Professor” do SIGAH</b> em PDF, a <b>planilha de horário em Excel (.xlsx)</b> no modelo de quadro (dia, turmas ao lado, disciplina e professor em cada célula), os <b>PDFs feitos por este gerador</b> e o <b>arquivo .json</b> exportado por ele. Outros PDFs com a grade por professor (dias nas colunas e horários nas linhas) também costumam funcionar. Se a outra escola manda um PDF por turno (manhã e tarde), traga um de cada vez.</p>
+    <div class="row end">
+      <label>Nome da outra escola<br><input type="text" id="exEscola" placeholder="ex.: Colégio Estadual Fulano de Tal" style="width:min(340px,80vw)"></label>
+      <label class="btn pri" tabindex="0" role="button" id="exArqLbl">Escolher o arquivo (PDF, planilha ou .json)<input type="file" id="exArq" accept=".pdf,.json,.xlsx,.csv,.xls,.htm,.html,application/pdf,application/json" hidden></label>
+    </div>
+    <div id="exMsg"></div>
+    <div id="exLido"></div>
+  </div>
+  <div class="card">
+    <h3 style="font-size:14px;margin:0 0 6px">Horários de outras escolas guardados</h3>
+    <label class="chk"><input type="checkbox" id="exUsar"> Considerar esses horários ao gerar a grade e a hora-atividade (o gerador não põe aula nem HA quando o professor está na outra escola)</label>
+    <label class="small">Tempo para ir de uma escola à outra: <input type="number" id="exMargem" min="0" max="180" style="width:70px" aria-label="Minutos para trocar de escola"> minutos <span class="small">(aulas mais perto que isso aparecem como “pouco tempo para trocar de escola”)</span></label>
+    <div class="scroll" tabindex="0" style="margin-top:8px"><table class="t" id="exLista"></table></div>
+    <div id="exVer"></div>
+    <div id="exConfl"></div>
+  </div>
+  <div class="card">
+    <h3 style="font-size:14px;margin:0 0 6px">Mandar o nosso horário para outra escola</h3>
+    <p class="small" style="margin:0 0 8px">O arquivo leva só o nome do professor, o dia, o horário, a turma e a disciplina — sem e-mail, telefone ou observações. Se a outra escola também usa este gerador, ela abre o arquivo (ou o PDF) nesta mesma aba.</p>
+    <div class="row"><label><input type="radio" name="exQuem" value="todos" checked> Todos os professores</label><label><input type="radio" name="exQuem" value="esc"> Só os que eu marcar</label><button class="btn sm" id="exTodosConf">Marcar quem já tem horário de outra escola</button></div>
+    <div class="chiplist" id="exProfs" style="margin-top:6px"></div>
+    <label class="chk"><input type="checkbox" id="exHA" checked> Incluir a hora-atividade (HA) — nesses horários o professor também está aqui</label>
+    <div class="row"><button class="btn pri" id="exBaixarJson">Baixar arquivo para a outra escola (.json)</button><button class="btn" id="exBaixarPdf">Baixar PDF (para ler e para importar)</button></div>
+    <div id="exExpMsg"></div>
+  </div>
+</section>
+
+<!-- ============ TURMAS ============ -->
+<section id="s-turmas">
+  <h2>Turmas e aulas</h2>
+  <p class="lead">Crie a turma e escolha qual horário ela segue (os horários ficam na aba Cadastro › Horários). O período vem do horário escolhido. Cada turma precisa somar as aulas da semana do seu horário (aulas por dia × 5). Ao mudar algo aqui, use “Ajustar a grade atual” na aba Gerar.</p>
+  <div class="card">
+    <h3 style="font-size:14px;margin:0 0 6px">Nova turma</h3>
+    <div class="row end">
+      <label>Nome<br><input type="text" id="ntNome" placeholder="ex.: 6F" style="width:110px"></label>
+      <label>Horário<br><select id="ntTipo" style="min-width:260px"></select></label>
+      <label>Nível (equipamentos)<br><select id="ntNivel"><option value="F">Fundamental</option><option value="M">Médio</option></select></label>
+      <label>Alunos<br><input type="number" id="ntAlunos" min="0" value="30"></label>
+      <button class="btn sm pri" id="ntAdd">Criar turma</button>
+    </div>
+    <div id="ntHorPrev" class="small" style="margin-top:6px"></div>
+    <div id="ntMsg"></div>
+  </div>
+  <div class="card">
+    <h3 style="font-size:14px;margin:0 0 6px">Todas as turmas</h3>
+    <div class="scroll" tabindex="0"><table class="t" id="tTodas"></table></div>
+    <div id="tTodasMsg"></div>
+  </div>
+  <div class="card" id="tCardDisc">
+    <div class="row"><select id="tSel" aria-label="Turma"></select><span id="tInfo" class="small"></span></div>
+    <div class="row end" style="margin-top:8px" id="tDados"></div>
+    <table class="t" id="tTab" style="margin-top:10px"></table>
+    <div class="row" style="margin-top:8px"><input type="text" id="tNovaDisc" placeholder="Sigla da disciplina" list="discList"><datalist id="discList"></datalist><select id="tNovoProf" aria-label="Professor da disciplina"></select><input type="number" id="tNovoN" value="2" min="1" max="12" aria-label="Aulas por semana"><button class="btn sm" id="tAdd">Adicionar disciplina</button></div>
+  </div>
+</section>
+
+<!-- ============ HORÁRIOS ============ -->
+<section id="s-horarios">
+  <h2>Horários (modelos de horário das aulas)</h2>
+  <p class="lead">Crie quantos horários precisar — Tipo 1, Tipo 2, Tipo 3... Cada um tem o período, o início, quantas aulas por dia e os intervalos. Depois, na aba Cadastro › Turmas e aulas, cada turma escolhe qual horário segue. Mudou um horário aqui, todas as turmas que usam ele mudam juntas.</p>
+  <div class="two w">
+    <div class="card" style="padding:0"><div class="plistsel" id="hLista" style="border:none"></div>
+      <div class="row" style="padding:10px"><button class="btn sm pri" id="hNovo">+ Novo horário</button><button class="btn sm" id="hDup">Duplicar</button></div></div>
+    <div class="card" id="hEd"></div>
+  </div>
+</section>
+
+<!-- ============ REGRAS ============ -->
+<section id="s-regras">
+  <h2>Regras da escola</h2>
+  <p class="lead">Ligue ou desligue as regras. As rígidas o gerador nunca quebra se houver outro jeito; as preferências ele tenta atender.</p>
+  <div class="card">
+    <label class="chk">Máximo de aulas da mesma disciplina por dia na turma <input type="number" id="rMax" min="1" max="6" aria-label="Máximo por dia"></label>
+    <label class="chk"><input type="checkbox" id="rTwo"> Disciplinas com só 2 aulas na semana: em dias diferentes (nunca geminadas)</label>
+    <label class="chk"><input type="checkbox" id="rPar"> Matemática, Português e outras com 3 ou mais aulas: de duas em duas (geminadas)</label>
+    <label class="chk"><input type="checkbox" id="rLate"> Evitar aulas geminadas nas duas últimas aulas</label>
+    <label class="chk"><input type="checkbox" id="rCross"> Quem dá aula no fim da manhã não pega o começo da tarde (pelo menos 1 hora de almoço)</label>
+    <label class="chk"><input type="checkbox" id="rGap"> Evitar janelas (horário vago entre aulas) do professor</label>
+    <label class="chk"><input type="checkbox" id="rSep"> Mesma disciplina duas vezes no dia só se for geminada (seguidas)</label>
+    <label class="chk"><input type="checkbox" id="rInt"> O professor precisa ter intervalo: quando dá aula antes e depois do recreio, ficar livre pelo menos <input type="number" id="rMin" min="5" max="60" style="width:60px" aria-label="Minutos de intervalo"> minutos seguidos</label>
+    <p class="small">O gerador usa o horário real de cada aula (aba Cadastro › Horários) para conferir se o professor fica com intervalo e se não há aulas sobrepostas entre turmas de horários diferentes.</p>
+  </div>
+  <div class="card">
+    <h3 style="font-size:14px;margin:0 0 6px">Regras adicionais</h3>
+    <p class="small">Crie quantas quiser. <b>Rígida</b>: o gerador só quebra se não houver nenhum outro jeito (e avisa). <b>Preferência</b>: ele tenta atender.</p>
+    <div class="row end">
+      <label>Tipo de regra<br><select id="xTipo">
+        <option value="seguidas">Máximo de aulas seguidas do professor</option>
+        <option value="maxdia">Máximo de aulas por dia do professor</option>
+        <option value="dialivre">Professor com pelo menos 1 dia sem aula</option>
+        <option value="posicao">Disciplina não pode em certas aulas (ex.: 1ª ou última)</option>
+        <option value="espalhar">Espalhar a disciplina em pelo menos X dias</option>
+        <option value="simult">Máximo de turmas com a disciplina ao mesmo tempo (ex.: quadra)</option>
+      </select></label>
+      <span id="xCampos" class="row end"></span>
+      <label>Força<br><select id="xForca"><option value="rigida">Rígida</option><option value="preferencia">Preferência</option></select></label>
+      <button class="btn pri sm" id="xAdd">Adicionar regra</button>
+    </div>
+    <table class="t" id="xLista" style="margin-top:10px"></table>
+  </div>
+  <div class="card">
+    <h3 style="font-size:14px;margin:0 0 6px">Professores que não podem coincidir (recomposição e outros casos)</h3>
+    <p class="small">Ex.: 1ª e 2ª docência. Escolha os dois professores e, se quiser, <b>só algumas turmas</b> de cada um, quais aulas contam (só recomposição, qualquer aula ou disciplinas escolhidas), os dias e a força da regra.</p>
+    <div class="scroll"><table class="t" id="rPares"></table></div>
+    <div class="impgrp" id="rForm" style="margin-top:10px"></div>
+  </div>
+</section>
+
+<!-- ============ AVISOS ============ -->
+<section id="s-avisos">
+  <h2>Avisos aos professores</h2>
+  <p class="lead">Depois de uma mudança, avise os professores por WhatsApp e/ou e-mail, com o horário em PDF. A mensagem já vem pronta com o que mudou para cada um e você pode editar antes de enviar. O e-mail e o celular de cada professor ficam na aba Cadastro › Professores. (Para avisar sobre aulas vagas e substituições, use a aba Grade › Aulas vagas.)</p>
+  <div class="card">
+    <h3 style="font-size:14px;margin:0 0 6px">1. Quem recebe</h3>
+    <div class="row"><label><input type="radio" name="avQuem" value="af" checked> Só os afetados pela mudança <span id="avNaf" class="small"></span></label>
+      <label><input type="radio" name="avQuem" value="todos"> Todos os professores</label>
+      <label><input type="radio" name="avQuem" value="esc"> Escolher na lista</label></div>
+    <p class="small" style="margin:4px 0">Afetados = professores com aula diferente desde o último aviso (<span id="avBaseTxt"></span>). Em laranja na lista.</p>
+    <div class="chiplist" id="avLista"></div>
+  </div>
+  <div class="card">
+    <h3 style="font-size:14px;margin:0 0 6px">2. O que vai em anexo (PDF)</h3>
+    <div class="row">
+      <label><input type="checkbox" id="anIndiv"> Horário individual do professor</label>
+      <label><input type="checkbox" id="anHA"> Com a hora-atividade (HA)</label>
+      <label><input type="checkbox" id="anTurmas"> Horário das turmas dele</label>
+      <span id="anGerais" class="row"></span>
+      <label><input type="checkbox" id="anEq"> Equipamentos reservados para ele</label>
+    </div>
+  </div>
+  <div class="card">
+    <h3 style="font-size:14px;margin:0 0 6px">3. Mensagem</h3>
+    <div class="grid2"><label>Vale a partir de<br><input type="date" id="avData"></label><label>Assinatura<br><input type="text" id="avRem" style="width:100%"></label><label style="grid-column:1/-1">Assunto do e-mail (preenchido sozinho; use {nome} e {data})<br><input type="text" id="avAssunto" style="width:100%"></label></div>
+    <label class="small" for="avMsg" style="display:block;margin-top:8px">Mensagem padrão — use {nome}, {mudancas}, {motivo}, {data} e {assinatura}; o gerador troca por cada professor.</label>
+    <textarea id="avMsg" rows="9"></textarea>
+    <div class="row" style="margin-top:6px"><button class="btn sm" id="avAplicar">Aplicar a mensagem padrão em todos</button><button class="btn sm" id="avPadrao">Voltar ao texto original</button></div>
+  </div>
+  <div class="card">
+    <div class="row" style="justify-content:space-between"><h3 style="font-size:14px;margin:0">4. Enviar</h3>
+      <div class="row"><button class="btn sm" id="avPdfTodos">Baixar um PDF por professor</button><button class="btn sm" id="avPdfUnico">Baixar um PDF único com todos</button><button class="btn sm pri" id="avMarcar">Marcar estes como avisados</button></div></div>
+    <p class="small">Ao clicar em WhatsApp ou E-mail, o gerador monta o PDF com os anexos marcados no item 2. No celular (e nos computadores que permitem), abre o “compartilhar” com o PDF já junto; nos outros, o PDF é baixado e a conversa abre com a mensagem escrita, para você só clicar no clipe e anexar.</p>
+    <div id="avMsgBox"></div>
+    <div id="avEnvio"></div>
+  </div>
+</section>
+
+<!-- ============ HISTÓRICO ============ -->
+<section id="s-hist">
+  <h2>Histórico de mudanças</h2>
+  <p class="lead">Tudo o que muda na grade e nos cadastros fica registrado aqui, com data, hora, quem pediu e o motivo (preencha a faixa amarela no topo antes de mexer). Também ficam guardadas as últimas grades, para ver, comparar ou voltar a uma delas.</p>
+  <div class="card noprint">
+    <div class="row">
+      <input type="text" id="hBusca" placeholder="Buscar (professor, turma, motivo...)" style="flex:1;min-width:200px">
+      <select id="hTipo" aria-label="Tipo de mudança"><option value="">Todos os tipos</option></select>
+      <label class="small">De <input type="date" id="hDe"></label><label class="small">até <input type="date" id="hAte"></label>
+      <button class="btn sm" id="hExcel">Baixar relatório (Excel)</button><button class="btn sm" id="hPrint">Imprimir</button>
+    </div>
+    <div class="row" style="margin-top:8px"><input type="text" id="hNota" placeholder="Anotação livre (ex.: reunião com a direção decidiu...)" style="flex:1;min-width:260px"><button class="btn sm" id="hAddNota">Adicionar anotação</button></div>
+  </div>
+  <div class="card scroll" tabindex="0"><table class="t" id="hTab"></table></div>
+  <div class="card noprint">
+    <div class="row" style="justify-content:space-between"><h2 style="margin:0">Grades anteriores</h2>
+      <div class="row"><input type="text" id="sNome" placeholder="Nome da versão (opcional)"><button class="btn sm pri" id="sSalvar">Guardar a grade atual</button>
+      <label class="small">Guardar até <input type="number" id="sLim" min="3" max="50" style="width:60px" aria-label="Quantas grades guardar"> grades</label></div></div>
+    <p class="small">Antes de cada “Ajustar”, “Gerar do zero” ou “Restaurar”, a grade em uso é guardada aqui sozinha. Quando passa do limite, a mais antiga sai.</p>
+    <table class="t" id="sTab"></table>
+  </div>
+  <div id="sOut"></div>
+</section>
+
+
+<!-- ============ INSTITUIÇÃO ============ -->
+<section id="s-inst">
+  <h2>Cadastro da instituição</h2>
+  <p class="lead">Dados da escola no padrão da SEED-PR. O nome e o brasão aparecem nos PDFs, nas mensagens aos professores, nos arquivos baixados e no arquivo enviado para outras escolas.</p>
+  <div class="card" id="iForm"></div>
+</section>
+<!-- ============ DADOS ============ -->
+<section id="s-dados">
+  <h2>Relatórios: imprimir e baixar</h2>
+  <p class="lead">Imprima grades e listas e baixe tudo em Excel. Para guardar uma cópia de todos os dados (ou levar para outro computador), use <b>Relatórios › Backup</b>.</p>
+  <div class="card">
+    <div class="row">
+      <button class="btn pri" id="xExcel">Baixar tudo em Excel</button>
+      <button class="btn" id="xIrBackup">Backup (guardar ou recuperar todos os dados)</button>
+      <button class="btn" id="xReset">Voltar à grade oficial</button>
+    </div>
+    <div id="xMsg"></div>
+    <p class="small">O Excel traz o quadro geral de cada período, a grade de cada professor (com HA, se gerada) e os equipamentos, com as cores de cada professor. “Voltar à grade oficial” mantém o Histórico, as grades guardadas e as ausências marcadas.</p>
+  </div>
+  <div class="card" id="impCard">
+    <h3 style="font-size:15px;margin:0 0 4px;color:var(--primary)">Imprimir</h3>
+    <p class="small" style="margin:0 0 10px">Marque o que quer imprimir e clique em <b>Gerar PDF para imprimir</b>. O PDF abre pronto para a impressora. Com o papel em <b>Automático</b>, cada folha sai do tamanho do conteúdo (o quadro geral sai inteiro, como na tela) e a impressora ajusta ao papel que você escolher na hora de imprimir (A4, A3, Ofício...). Na janela de impressão, use “Ajustar à página”.</p>
+    <div id="impItens"></div>
+    <div class="row end" style="margin-top:12px">
+      <label>Papel<br><select id="impPapel"><option value="auto">Automático (ajusta ao papel na hora de imprimir)</option><option value="A4">A4</option><option value="A3">A3</option><option value="oficio">Ofício</option><option value="carta">Carta</option></select></label>
+      <label>Orientação<br><select id="impOrient"><option value="paisagem">Paisagem (deitado)</option><option value="retrato">Retrato (em pé)</option></select></label>
+      <label>Cores<br><select id="impCores"><option value="cor">Coloridas</option><option value="cinza">Tons de cinza (economiza tinta)</option></select></label>
+      <label>Grades<br><select id="impGrade"><option value="oficial">Grade oficial</option><option value="semana">Semana da data, com aulas vagas</option></select></label>
+      <label>Data de referência<br><input type="date" id="impData"></label>
+      <label>Formato<br><select id="impFormato"><option value="unico">Um PDF único com tudo</option><option value="cada">Um arquivo por item</option></select></label>
+      <label class="small" style="align-self:center"><input type="checkbox" id="impCab"> Cabeçalho com “vale a partir de” e assinatura</label>
+    </div>
+    <p class="small" style="margin:6px 0 0">A data de referência vale para as aulas vagas do dia, da semana e para as grades com aulas vagas. O histórico usa o período escolhido no item dele.</p>
+    <div class="row" style="margin-top:12px"><button class="btn sm" id="impTodos">Marcar todos</button><button class="btn sm" id="impNenhum">Desmarcar todos</button><span style="flex:1"></span><button class="btn pri" id="impGerar">Gerar PDF para imprimir</button></div>
+    <div id="impMsg"></div>
+  </div>
+  <div class="card">
+    <h3 style="font-size:14px;margin:0 0 6px">Tabela oficial de hora-atividade (SEED-PR, HA 15/5)</h3>
+    <div class="scroll" tabindex="0"><table class="t" id="haTab" style="width:auto"></table></div>
+  </div>
+</section>
+
+<!-- ============ BACKUP ============ -->
+<section id="s-backup">
+  <h2>Relatórios: backup</h2>
+  <p class="lead">O backup é <b>um arquivo só com todos os dados</b> do gerador: professores, turmas, horários, regras, grade, hora-atividade, equipamentos, aulas vagas, avisos, histórico, outras escolas e o cadastro da instituição. Com ele você recupera tudo se o computador estragar, se o navegador for limpo, ou para continuar o trabalho em outro computador.</p>
+  <div id="bkLembrete"></div>
+  <div id="bkMsg" aria-live="polite"></div>
+  <div id="bkDesfazerBox"></div>
+  <div class="two w">
+    <div class="card">
+      <h3 style="font-size:15px;margin:0 0 6px;color:var(--primary)">1. Fazer backup</h3>
+      <p class="small" style="margin:0 0 10px">Baixa o arquivo para o computador. Guarde em lugar seguro: pen drive, e-mail ou Google Drive. Faça pelo menos uma vez por semana e sempre depois de mudanças grandes.</p>
+      <button class="btn pri" id="bkBaixar">Baixar backup agora</button>
+      <div id="bkInfo" style="margin-top:12px"></div>
+    </div>
+    <div class="card">
+      <h3 style="font-size:15px;margin:0 0 6px;color:var(--primary)">2. Recuperar um backup</h3>
+      <p class="small" style="margin:0 0 10px">Escolha o arquivo de backup. Antes de trocar qualquer coisa, o gerador mostra o que tem nele e compara com o que está aqui. Também abre o “arquivo de dados” da versão anterior.</p>
+      <label class="btn" tabindex="0" id="bkArqLbl">Escolher arquivo de backup<input type="file" id="bkArq" accept=".json,application/json" hidden></label>
+      <div id="bkLido" style="margin-top:12px"></div>
+    </div>
+  </div>
+</section>
+</main>

@@ -1,0 +1,21 @@
+{
+  "name": "gerador-de-horario",
+  "version": "1.0.0",
+  "description": "Gerador de horário escolar gratuito e livre",
+  "private": true,
+  "scripts": {
+    "montar": "python3 montar.py",
+    "testar": "node testes/rodar.js"
+  },
+  "dependencies": {
+    "jspdf": "2.5.1",
+    "jspdf-autotable": "3.8.2",
+    "fflate": "0.8.2",
+    "pdfjs-dist": "3.11.174"
+  },
+  "devDependencies": {
+    "playwright": "^1.47.0",
+    "axe-core": "4.10.2"
+  },
+  "license": "GPL-3.0-or-later"
+}
