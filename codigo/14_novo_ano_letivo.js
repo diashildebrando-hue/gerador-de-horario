@@ -52,7 +52,7 @@ function naAplicar(cfg){
   var rp=function(i){ return mapa[i]; };
   var turmas=cfg.turmas?O.turmas.filter(function(t){ return !t.excluida; }).map(function(t){ return deep(t); }):[];
   var tmap={}; if(cfg.turmas){ var j=0; O.turmas.forEach(function(t,i){ if(!t.excluida) tmap[i]=j++; }); }
-  var matriz=cfg.matriz&&cfg.turmas?O.matriz.filter(function(r){ return rp(r.p)!=null&&tmap[r.t]!=null; }).map(function(r){ return {t:tmap[r.t],disc:r.disc,p:rp(r.p),doc2:!!r.doc2,n:r.n}; }):[];
+  var matriz=cfg.matriz&&cfg.turmas?O.matriz.filter(function(r){ return rp(r.p)!=null&&tmap[r.t]!=null; }).map(function(r){ var o={t:tmap[r.t],disc:r.disc,p:rp(r.p),doc2:!!r.doc2,n:r.n}; if(r.p2!=null&&rp(r.p2)!=null) o.p2=rp(r.p2); return o; }):[];
   var extras=cfg.regras?(O.extras||[]).filter(function(r){ return r.fonte!=="formulario"&&(r.p==null||r.p<0||(cfg.ind&&rp(r.p)!=null)); }).map(function(r){ var x=deep(r); if(x.p!=null&&x.p>=0) x.p=rp(x.p); return x; }):[];
   var pares=cfg.ind?(O.pares||[]).filter(function(r){ return rp(r.a)!=null&&rp(r.b)!=null; }).map(function(r){ var x=deep(r); x.a=rp(r.a); x.b=rp(r.b); x.ta=[]; x.tb=[]; x.juntas=null; x.soJuntas=false; return x; }):[];
   var hlp={}; if(cfg.equip&&cfg.ind) Object.keys(O.haLocPad||{}).forEach(function(k){ if(rp(+k)!=null) hlp[rp(+k)]=O.haLocPad[k]; });

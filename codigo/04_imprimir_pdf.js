@@ -89,7 +89,7 @@ function impGeral(D,per,datas,wk,naPagina){
         row.push({content:(it.a+1)+"ª\n"+g.tp.aulas[it.a][0]+"–"+g.tp.aulas[it.a][1],styles:{fillColor:[238,242,246],fontStyle:"bold"}});
         g.ts.forEach(function(t){ var s=d*n+it.a, k=ST.grid[t][s], vi=wk?wk.cell[datas[d]+"|"+t+"|"+s]:null;
           if(vi){ row.push({content:vi.sub!=null?vi.disc+(cfg.duas?"\n":" · ")+pnome(vi.sub)+" (subst.)":"AULA VAGA"+(cfg.duas?"\n":" · ")+vi.disc,styles:{fillColor:F(vi.sub!=null?COR_SUB:COR_VAGA),fontStyle:"bold"}}); return; }
-          if(k){ var x=parseK(k); row.push({content:textoAula(k,cfg.duas),styles:{fillColor:corProf(x.p)}}); } else row.push(""); }); });
+          if(k){ var x=parseK(k); row.push({content:textoAula(k,cfg.duas,t),styles:{fillColor:corProf(x.p)}}); } else row.push(""); }); });
       body.push(row); }
     D2.autoTable({startY:y+1, head:[head1,head2], body:body, theme:"grid", margin:{left:8,right:8,top:8,bottom:5}, rowPageBreak:"avoid",
       styles:{fontSize:cfg.fs,cellPadding:{top:0.45,bottom:0.45,left:0.4,right:0.4},halign:"center",valign:"middle",lineColor:[200,208,216],lineWidth:0.15,textColor:[23,33,43],overflow:"linebreak"},

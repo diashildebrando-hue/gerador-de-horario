@@ -23,10 +23,11 @@ function fillSemanas(){
   var cnt={}; ST.ausencias.forEach(function(a){ if(a.cancelada) return; L.forEach(function(s){ if(a.de<=addDias(s,4)&&a.ate>=s) cnt[s]=(cnt[s]||0)+1; }); });
   document.getElementById("gSemana").innerHTML='<option value="">Grade oficial</option>'+L.map(function(s){ return '<option value="'+s+'"'+(s===SEMANA?" selected":"")+">Semana de "+fmtDM(s)+" a "+fmtDM(addDias(s,4))+(s===s0?" (esta semana)":"")+(cnt[s]?" · "+cnt[s]+" ausência"+(cnt[s]>1?"s":""):"")+"</option>"; }).join("");
 }
-function cellK(k,label,extra){
+function cellK(k,label,extra,t){
   if(!k) return '<div class="c" '+(extra||"")+'><small style="color:var(--x)">—</small></div>';
   var x=parseK(k), pr=ST.profs[x.p]||{cor:"#eee",nome:"?"};
-  return '<div class="c" style="background:'+pr.cor+'" '+(extra||"")+'><b>'+esc(x.disc)+'</b><small>'+esc(label==null?pr.nome:label)+'</small></div>';
+  var q=label==null?p2De(t,k):-1;
+  return '<div class="c" style="background:'+pr.cor+'" '+(extra||"")+'><b>'+esc(x.disc)+'</b><small>'+esc(label==null?(q>=0?"1º "+pr.nome:pr.nome):label)+'</small>'+(q>=0?'<small>2º '+esc(pnome(q))+'</small>':"")+'</div>';
 }
 function cellVaga(it,extra,comTurma){ return '<div class="c vg" '+(extra||"")+' title="Aula vaga: '+esc(pnome(it.p))+' ausente"><b>AULA VAGA</b><small>'+(comTurma?esc(ST.turmas[it.t].nome)+" · ":"")+esc(it.disc)+" · "+esc(pnome(it.p))+"</small></div>"; }
 function cellSub(it,extra,comTurma){ return '<div class="c sb" '+(extra||"")+'><b>'+(comTurma?esc(ST.turmas[it.t].nome)+" · ":"")+esc(it.disc)+" · "+esc(pnome(it.sub))+"</b><small>substitui "+esc(pnome(it.p))+"</small></div>"; }
@@ -52,8 +53,8 @@ function renderGrade(){
     out.innerHTML=topo+(datas?"":'<div class="row noprint" style="margin-bottom:8px"><label class="small"><input type="checkbox" id="modoTravar"'+(MODO_TRAVAR?" checked":"")+'> Modo travar: clique numa aula para travar ou destravar (aula travada não muda ao gerar)</label></div>')+
       '<h3 style="margin:0 0 8px;font-size:15px">'+esc(T.nome)+" — "+tp.periodo+' <span class="small">('+esc(tp.nome)+")</span></h3>"+
       tabelaDias(linhasTurma(t),function(d,ln){ var s=d*n+ln.a, k=ST.grid[t][s], ex='data-s="'+s+'" data-t="'+t+'"';
-        if(wk){ var it=wk.cell[datas[d]+"|"+t+"|"+s]; var x=it?(it.sub!=null?cellSub(it,ex):cellVaga(it,ex)):cellK(k,null,ex); return addCls(x," clk"+(ACAO&&ACAO.t===t&&ACAO.s===s?" sel":"")); }
-        return marcaExt(addCls(cellK(k,null,ex)," clk"+((SEL&&SEL.t===t&&SEL.s===s)||(DESTAQUE&&DESTAQUE.t===t&&DESTAQUE.s===s)?" sel":"")+(conf[t+"|"+s]?" conf":"")+(ST.locks[t+"|"+s]?" lock":"")),extDaAula(t,s)); },headsDias(datas));
+        if(wk){ var it=wk.cell[datas[d]+"|"+t+"|"+s]; var x=it?(it.sub!=null?cellSub(it,ex):cellVaga(it,ex)):cellK(k,null,ex,t); return addCls(x," clk"+(ACAO&&ACAO.t===t&&ACAO.s===s?" sel":"")); }
+        return marcaExt(addCls(cellK(k,null,ex,t)," clk"+((SEL&&SEL.t===t&&SEL.s===s)||(DESTAQUE&&DESTAQUE.t===t&&DESTAQUE.s===s)?" sel":"")+(conf[t+"|"+s]?" conf":"")+(ST.locks[t+"|"+s]?" lock":"")),extDaAula(t,s)); },headsDias(datas));
     var mt=document.getElementById("modoTravar"); if(mt) mt.onchange=function(e){ MODO_TRAVAR=e.target.checked; SEL=null; };
     if(EDG&&!datas) edDecorar(out);
     else out.querySelectorAll(".c[data-s]").forEach(function(el){ el.onclick=function(){ var tt=+el.dataset.t, ss=+el.dataset.s;
@@ -95,9 +96,9 @@ function geralHTML(per,titulo,excel,datas,wk){
       var a=it.a, n=g.tp.aulas.length;
       h+='<th class="tm"'+sep+'>'+(a+1)+"ª<br>"+g.tp.aulas[a][0]+"–"+g.tp.aulas[a][1]+"</th>";
       g.ts.forEach(function(t){ var s=d*n+a, k=(ST.grid[t]||[])[s], vi=wk?wk.cell[datas[d]+"|"+t+"|"+s]:null;
-        if(excel){ if(vi){ h+='<td style="background:'+(vi.sub!=null?"#FFF4CC":"#FDE8E6")+'">'+(vi.sub!=null?esc(vi.disc)+"<br>"+esc(pnome(vi.sub))+" (subst.)":"AULA VAGA<br>"+esc(vi.disc))+"</td>"; return; } if(!k){ h+="<td></td>"; return; } var x=parseK(k); h+='<td style="background:'+ST.profs[x.p].cor+'">'+esc(x.disc)+"<br>"+esc(pnome(x.p))+"</td>"; return; }
+        if(excel){ if(vi){ h+='<td style="background:'+(vi.sub!=null?"#FFF4CC":"#FDE8E6")+'">'+(vi.sub!=null?esc(vi.disc)+"<br>"+esc(pnome(vi.sub))+" (subst.)":"AULA VAGA<br>"+esc(vi.disc))+"</td>"; return; } if(!k){ h+="<td></td>"; return; } var x=parseK(k); h+='<td style="background:'+ST.profs[x.p].cor+'">'+esc(x.disc)+"<br>"+esc(nomesAula(t,k))+"</td>"; return; }
         if(vi){ h+="<td>"+(vi.sub!=null?cellSub(vi):cellVaga(vi))+"</td>"; return; }
-        h+='<td title="'+esc(horA(t,a))+'">'+marcaExt(addCls(cellK(k,null,'data-t="'+t+'" data-s="'+s+'"'),(!wk&&conf[t+"|"+s]?" conf":"")+(ST.locks[t+"|"+s]?" lock":"")),wk?null:extDaAula(t,s))+"</td>"; });
+        h+='<td title="'+esc(horA(t,a))+'">'+marcaExt(addCls(cellK(k,null,'data-t="'+t+'" data-s="'+s+'"',t),(!wk&&conf[t+"|"+s]?" conf":"")+(ST.locks[t+"|"+s]?" lock":"")),wk?null:extDaAula(t,s))+"</td>"; });
     });
     h+="</tr>";
   }
@@ -122,7 +123,7 @@ function profTable(p,o){
     h+=tabelaDias(linhasSecao(sec,o.edit?null:filtro),function(d,ln){ var ci=ln.ci, cl=tm.CL[ci], ex='data-d="'+d+'" data-ci="'+ci+'"', its=by[d+"|"+ci];
       if(its){ n+=its.length;
         if(wk){ var vs=its.map(function(x){ return wk.cell[datas[d]+"|"+x.t+"|"+x.s]; }); if(vs.every(Boolean)) return cellVaga(vs[0],ex,true).replace("AULA VAGA","AUSENTE · AULA VAGA"); }
-        var lbl=its.map(function(x){ return ST.turmas[x.t].nome; }).join(" + "), x=addCls(cellK(its[0].key,lbl,ex),(its.length>1||its.some(function(y){ return conf[y.t+"|"+y.s]; }))?" conf":"");
+        var lbl=its.map(function(x){ return ST.turmas[x.t].nome+(x.seg?" · 2º docente":""); }).join(" + "), x=addCls(cellK(its[0].key,lbl,ex),(its.length>1||its.some(function(y){ return conf[y.t+"|"+y.s]; }))?" conf":"");
         x=x.replace(/<\/div>$/,'<span class="tmx">'+uniq(its.map(function(y){ return hmP(y.ini)+"–"+hmP(y.fim); })).join(" / ")+"</span></div>");
         var ee=null; its.some(function(y){ var r=extInfo(p,y.d,y.ini,y.fim); if(r.length){ ee=r[0]; return true; } return false; }); return marcaExt(x,ee); }
       var sb=bySub[d+"|"+ci]; if(sb) return cellSub(sb[0],ex,true);
@@ -203,7 +204,7 @@ function renderHA(){
   out.innerHTML='<div class="card">'+aviso+haResumo()+"</div>"+(ST.ha?'<div class="card">'+ps.map(function(q){ return profTable(q,{ha:true,AP:AP}); }).join('<hr style="border:none;border-top:1px solid var(--border);margin:14px 0">')+"</div>":"");
 }
 function haLocal(p,key){ var h=ST.ha&&ST.ha[p]; if(!h) return ""; return (h.locais&&h.locais[key])||ST.haLocPad[p]||""; }
-function contaAulas(){ var cnt=ST.profs.map(function(){ return 0; }); ST.turmas.forEach(function(T,t){ if(T.excluida) return; (ST.grid[t]||[]).forEach(function(k){ if(k) cnt[parseK(k).p]++; }); }); return cnt; }
+function contaAulas(){ var cnt=ST.profs.map(function(){ return 0; }); ST.turmas.forEach(function(T,t){ if(T.excluida) return; (ST.grid[t]||[]).forEach(function(k){ if(!k) return; cnt[parseK(k).p]++; var q=p2De(t,k); if(q>=0) cnt[q]++; }); }); return cnt; }
 function haNeed(p,cnt){ cnt=cnt||contaAulas(); var pr=ST.profs[p]; return {aulas:cnt[p], need:pr.haManual!=null&&pr.haManual!==""?+pr.haManual:Motor.haPorAulas(cnt[p])}; }
 function haGarantir(p){ ST.ha=ST.ha||{}; if(!ST.ha[p]){ var x=haNeed(p); ST.ha[p]={slots:[],need:x.need,aulas:x.aulas,locais:{}}; } if(!ST.ha[p].locais) ST.ha[p].locais={}; return ST.ha[p]; }
 function haOnde(key){ var x=haParse(key); return DIAS[x.d]+", "+x.txt; }
@@ -471,12 +472,13 @@ function renderTurmas(){
     if(b.dataset.arm!=="1"){ b.dataset.arm="1"; b.textContent="Confirmar exclusão?"; return; }
     logar("Turmas e aulas","Turma excluída: "+tm.nome); tm.excluida=true; tm.nome=tm.nome+" (excluída)"; ST.grid[t]=new Array(N).fill(null); save(); CACHE=null; _filled=false; sel.value=""; renderTurmas(); };
   var popts=profsOrdem();
-  document.getElementById("tTab").innerHTML="<tr><th>Disciplina</th><th>Professor</th><th>Aulas/semana</th><th>2ª docência</th><th></th></tr>"+rows.map(function(i){ var r=ST.matriz[i];
-    return "<tr><td><b>"+esc(r.disc)+"</b> <span class='small'>"+esc(ST.siglas[r.disc]||"")+'</span></td><td><select data-i="'+i+'" data-f="p" aria-label="Professor de '+esc(r.disc)+'">'+popts.map(function(j){ return '<option value="'+j+'"'+(j===r.p?" selected":"")+">"+esc(ST.profs[j].nome)+"</option>"; }).join("")+'</select></td><td><input type="number" min="1" max="12" data-i="'+i+'" data-f="n" value="'+r.n+'" aria-label="Aulas por semana de '+esc(r.disc)+'"></td><td>'+(r.doc2?"sim":"")+'</td><td class="right"><button class="btn sm" data-del="'+i+'">Remover</button></td></tr>'; }).join("");
+  document.getElementById("tTab").innerHTML="<tr><th>Disciplina</th><th>Professor (1º docente)</th><th>2º docente</th><th>Aulas/semana</th><th></th></tr>"+rows.map(function(i){ var r=ST.matriz[i];
+    return "<tr><td><b>"+esc(r.disc)+"</b> <span class='small'>"+esc(ST.siglas[r.disc]||"")+'</span>'+(r.doc2?' <span class="small">(2ª docência)</span>':"")+'</td><td><select data-i="'+i+'" data-f="p" aria-label="Professor de '+esc(r.disc)+'">'+popts.map(function(j){ return '<option value="'+j+'"'+(j===r.p?" selected":"")+">"+esc(ST.profs[j].nome)+"</option>"; }).join("")+'</select></td><td><select data-i="'+i+'" data-f="p2" aria-label="2º docente de '+esc(r.disc)+'"><option value="-1">— nenhum —</option>'+popts.filter(function(j){ return j!==r.p; }).map(function(j){ return '<option value="'+j+'"'+(j===r.p2?" selected":"")+">"+esc(ST.profs[j].nome)+"</option>"; }).join("")+'</select></td><td><input type="number" min="1" max="12" data-i="'+i+'" data-f="n" value="'+r.n+'" aria-label="Aulas por semana de '+esc(r.disc)+'"></td><td class="right"><button class="btn sm" data-del="'+i+'">Remover</button></td></tr>'; }).join("");
   document.querySelectorAll("#tTab [data-f]").forEach(function(el){ el.onchange=function(){ var r=ST.matriz[+el.dataset.i], old=kOf(r.disc,r.p,r.doc2);
+    if(el.dataset.f==="p2"){ var v=+el.value; logar("Turmas e aulas",ST.turmas[t].nome+" — "+r.disc+": 2º docente "+(r.p2!=null&&r.p2>=0?pnome(r.p2):"nenhum")+" → "+(v>=0?pnome(v):"nenhum"),{t:t}); if(v>=0) r.p2=v; else delete r.p2; save(); CACHE=null; _TM=null; renderTurmas(); return; }
     if(el.dataset.f==="p") logar("Turmas e aulas",ST.turmas[t].nome+" — "+r.disc+": professor "+pnome(r.p)+" → "+pnome(+el.value),{t:t});
     else logar("Turmas e aulas",ST.turmas[t].nome+" — "+r.disc+": aulas por semana "+r.n+" → "+el.value,{t:t});
-    r[el.dataset.f]=+el.value; var nk=kOf(r.disc,r.p,r.doc2); if(old!==nk){ ST.grid[t]=ST.grid[t].map(function(k){ return k===old?nk:k; }); } save(); CACHE=null; renderTurmas(); }; });
+    r[el.dataset.f]=+el.value; if(r.p2===r.p) delete r.p2; var nk=kOf(r.disc,r.p,r.doc2); if(old!==nk){ ST.grid[t]=ST.grid[t].map(function(k){ return k===old?nk:k; }); } save(); CACHE=null; renderTurmas(); }; });
   document.querySelectorAll("#tTab [data-del]").forEach(function(b){ b.onclick=function(){ var r=ST.matriz[+b.dataset.del]; logar("Turmas e aulas",ST.turmas[t].nome+": removida "+r.disc+" ("+pnome(r.p)+", "+r.n+" aulas)",{t:t}); var k=kOf(r.disc,r.p,r.doc2); ST.matriz.splice(+b.dataset.del,1); ST.grid[t]=ST.grid[t].map(function(x){ return x===k?null:x; }); save(); CACHE=null; renderTurmas(); }; });
   document.getElementById("discList").innerHTML=Object.keys(ST.siglas).map(function(d){return '<option value="'+esc(d)+'">';}).join("");
 }

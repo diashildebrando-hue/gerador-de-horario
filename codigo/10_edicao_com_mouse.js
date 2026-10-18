@@ -11,7 +11,7 @@ function edVerificar(G){
   var cel={}, itens=[], falta={};
   var marca=function(t,s,m){ var k=t+"|"+s; (cel[k]=cel[k]||[]).push(m); };
   var porP={};
-  ST.turmas.forEach(function(T,t){ if(T.excluida) return; (G[t]||[]).forEach(function(k,s){ if(!k) return; var p=parseK(k).p, x=edTempo(t,s), key=p+"|"+x.d; (porP[key]=porP[key]||[]).push({t:t,s:s,ini:x.ini,fim:x.fim,txt:x.txt}); }); });
+  ST.turmas.forEach(function(T,t){ if(T.excluida) return; (G[t]||[]).forEach(function(k,s){ if(!k) return; var x=edTempo(t,s); [parseK(k).p,p2De(t,k)].forEach(function(p){ if(p<0) return; var key=p+"|"+x.d; (porP[key]=porP[key]||[]).push({t:t,s:s,ini:x.ini,fim:x.fim,txt:x.txt}); }); }); });
   Object.keys(porP).forEach(function(key){ var L=porP[key], p=+key.split("|")[0], d=+key.split("|")[1];
     for(var i=0;i<L.length;i++) for(var j=i+1;j<L.length;j++){ var A=L[i], B=L[j]; if(A.t===B.t) continue;
       if(A.ini<B.fim&&B.ini<A.fim){ marca(A.t,A.s,"BATENDO: "+pnome(p)+" também está na "+ST.turmas[B.t].nome); marca(B.t,B.s,"BATENDO: "+pnome(p)+" também está na "+ST.turmas[A.t].nome);
@@ -23,8 +23,8 @@ function edVerificar(G){
     if(H.length>n){ H.forEach(function(s){ marca(t,s,"SOBRANDO: "+T+" tem "+H.length+" aula(s) de "+descK(k)+(n?", o certo é "+n:", e essa aula não é desta turma")); });
       itens.push({tipo:"Sobrando",txt:T+": "+H.length+" aula(s) de "+descK(k)+(n?" — o certo é "+n+" (sobra "+(H.length-n)+")":" — essa aula não é desta turma"),t:t,s:H[0]}); }
     else if(H.length<n){ (falta[t]=falta[t]||[]).push({k:k,q:n-H.length}); itens.push({tipo:"Faltando",txt:T+": falta"+(n-H.length>1?"m ":" ")+(n-H.length)+" aula(s) de "+descK(k)+" (tem "+H.length+" de "+n+")",t:t,s:null}); } });
-  G.forEach(function(row,t){ if(!ST.turmas[t]||ST.turmas[t].excluida) return; row.forEach(function(k,s){ if(!k) return; var p=parseK(k).p, x=edTempo(t,s), v=blkVal(p,x.d,x.ini,x.fim);
-    if(v>=2){ marca(t,s,"NÃO PODE: "+pnome(p)+" marcou que "+(v===3?"está em formação":"não pode")+" nesse horário"); itens.push({tipo:"Não pode",txt:pnome(p)+" marcou que "+(v===3?"está em formação":"não pode")+" — "+edOnde(t,s),t:t,s:s}); } }); });
+  G.forEach(function(row,t){ if(!ST.turmas[t]||ST.turmas[t].excluida) return; row.forEach(function(k,s){ if(!k) return; var x=edTempo(t,s); [parseK(k).p,p2De(t,k)].forEach(function(p){ if(p<0) return; var v=blkVal(p,x.d,x.ini,x.fim);
+    if(v>=2){ marca(t,s,"NÃO PODE: "+pnome(p)+" marcou que "+(v===3?"está em formação":"não pode")+" nesse horário"); itens.push({tipo:"Não pode",txt:pnome(p)+" marcou que "+(v===3?"está em formação":"não pode")+" — "+edOnde(t,s),t:t,s:s}); } }); }); });
   var ordem={"Batendo":0,"Sobrando":1,"Faltando":2,"Não pode":3}; itens.sort(function(a,b){ return ordem[a.tipo]-ordem[b.tipo]; });
   return {cel:cel,itens:itens,falta:falta};
 }

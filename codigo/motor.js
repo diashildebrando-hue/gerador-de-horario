@@ -34,7 +34,8 @@
     var discIds = {}, nDisc = 0;
     var L = D.lessons.map(function (l) {
       if (!(l.disc in discIds)) discIds[l.disc] = nDisc++;
-      return { t: l.t, disc: l.disc, d: discIds[l.disc], p: l.p, doc2: !!l.doc2 };
+      var p2 = l.p2 != null && +l.p2 >= 0 && +l.p2 < P && +l.p2 !== l.p ? +l.p2 : -1;
+      return { t: l.t, disc: l.disc, d: discIds[l.disc], p: l.p, doc2: !!l.doc2, p2: p2 };
     });
     var nd = {};
     L.forEach(function (l) { var k = l.t + "|" + l.d; nd[k] = (nd[k] || 0) + 1; });
@@ -109,7 +110,7 @@
     for (var t = 0; t < M.T; t++) for (var s = 0; s < g[t].length; s++) {
       var li = g[t][s]; if (li < 0) continue;
       var l = M.L[li], x = slotX(M, t, s);
-      occ[l.p * M.DK + x]++; if (l.recomp) rec[l.p * M.DK + x]++; dOcc[l.d * M.DK + x]++;
+      occ[l.p * M.DK + x]++; if (l.p2 >= 0) occ[l.p2 * M.DK + x]++; if (l.recomp) rec[l.p * M.DK + x]++; dOcc[l.d * M.DK + x]++;
     }
     var ro = new Int16Array(Math.max(1, M.pares.length * 4 * M.DK));
     for (var t2 = 0; t2 < M.T; t2++) for (var s2 = 0; s2 < g[t2].length; s2++) { var li2 = g[t2][s2]; if (li2 < 0) continue; var e = M.lr[li2]; if (!e.length) continue; var x2 = slotX(M, t2, s2);
@@ -238,7 +239,7 @@
   function applyMove(M, S, t, s, li, sign) {
     if (li < 0) return;
     var l = M.L[li], x = slotX(M, t, s);
-    S.occ[l.p * M.DK + x] += sign; if (l.recomp) S.rec[l.p * M.DK + x] += sign; S.dOcc[l.d * M.DK + x] += sign;
+    S.occ[l.p * M.DK + x] += sign; if (l.p2 >= 0) S.occ[l.p2 * M.DK + x] += sign; if (l.recomp) S.rec[l.p * M.DK + x] += sign; S.dOcc[l.d * M.DK + x] += sign;
     var e = M.lr[li]; for (var q = 0; q < e.length; q += 2) { S.ro[e[q] * M.DK + x] += sign; if (e[q + 1]) S.ro[(e[q] + 1) * M.DK + x] += sign; }
   }
 
@@ -284,7 +285,7 @@
       days.length = 0; days.push(d1); if (d2 !== d1) days.push(d2);
       profs.length = 0;
       var pa = a >= 0 ? M.L[a].p : -1, pb = b >= 0 ? M.L[b].p : -1;
-      [pa, pb].forEach(function (pp) { if (pp < 0) return; if (profs.indexOf(pp) < 0) profs.push(pp); M.partners[pp].forEach(function (q) { if (profs.indexOf(q) < 0) profs.push(q); }); });
+      [pa, pb, a >= 0 ? M.L[a].p2 : -1, b >= 0 ? M.L[b].p2 : -1].forEach(function (pp) { if (pp < 0) return; if (profs.indexOf(pp) < 0) profs.push(pp); M.partners[pp].forEach(function (q) { if (profs.indexOf(q) < 0) profs.push(q); }); });
       var da = a >= 0 ? M.L[a].d : -1, db = b >= 0 ? M.L[b].d : -1;
       var before = this.local(t, profs, days, s1, s2, da, db);
       applyMove(M, S, t, s1, a, -1); applyMove(M, S, t, s2, b, -1);
@@ -312,7 +313,8 @@
     function tipo(w) { return w >= HARD_MIN ? "rígida" : "preferência"; }
     // professor em dois lugares (mesmo horário ou horários que se sobrepõem)
     var at = {};
-    for (var t = 0; t < M.T; t++) for (var s = 0; s < S.g[t].length; s++) { var li = S.g[t][s]; if (li < 0) continue; var x = slotX(M, t, s); (at[M.L[li].p + "|" + x] = at[M.L[li].p + "|" + x] || []).push(D.turmas[t].nome + " (" + M.L[li].disc + ")"); }
+    for (var t = 0; t < M.T; t++) for (var s = 0; s < S.g[t].length; s++) { var li = S.g[t][s]; if (li < 0) continue; var x = slotX(M, t, s); (at[M.L[li].p + "|" + x] = at[M.L[li].p + "|" + x] || []).push(D.turmas[t].nome + " (" + M.L[li].disc + ")");
+      if (M.L[li].p2 >= 0) (at[M.L[li].p2 + "|" + x] = at[M.L[li].p2 + "|" + x] || []).push(D.turmas[t].nome + " (" + M.L[li].disc + ", 2º docente)"); }
     for (var p = 0; p < M.P; p++) for (var d = 0; d < 5; d++) for (var k = 0; k < M.K; k++) {
       var here = at[p + "|" + (d * M.K + k)]; if (!here) continue;
       if (here.length > 1) out.push({ loc: { p: p, d: d, k: k }, tipo: "rígida", txt: nomeP(p) + " está em dois lugares — " + DIAS[d] + ", " + hora(k) + ": " + here.join(" e ") });

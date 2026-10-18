@@ -149,7 +149,7 @@ function linhasPdfProf(p,sec,comHA,AP,semExt){
     if(ln.brk!=null){ out.push({brk:true,cells:[ln.brkLabel,{content:ln.brkPlain,colSpan:5}]}); return; }
     var cl=tm.CL[ln.ci], cells=[ln.txt], fills=[null];
     for(var d=0;d<5;d++){ var txt="", fill=null;
-      L.forEach(function(x){ if(x.d===d && tm.clOfK[x.k]===ln.ci){ txt+=(txt?"\n":"")+ST.turmas[x.t].nome+" · "+x.disc+"\n"+hmP(x.ini)+"–"+hmP(x.fim); fill=rgb(ST.profs[p].cor); } });
+      L.forEach(function(x){ if(x.d===d && tm.clOfK[x.k]===ln.ci){ txt+=(txt?"\n":"")+ST.turmas[x.t].nome+" · "+x.disc+(x.seg?" (2º docente com "+pnome(x.com)+")":(p2De(x.t,x.key)>=0?" (com "+pnome(p2De(x.t,x.key))+")":""))+"\n"+hmP(x.ini)+"–"+hmP(x.fim); fill=rgb(ST.profs[p].cor); } });
       if(!txt){ var hk=ha.filter(function(key){ return haParse(key).d===d && linhaDaHA(key)===ln.ci; }); if(hk.length){ txt="HA"+(haLocal(p,hk[0])?"\n"+haLocal(p,hk[0]):""); fill=[216,240,225]; } }
       if(!txt && blkVal(p,d,cl.ini,cl.fim)===3){ txt="Formador"; fill=[234,223,246]; }
       if(!txt && !semExt){ var ei=extInfo(p,d,cl.ini,cl.fim); if(ei.length){ txt="Outra escola\n"+ei[0].escola; fill=[226,231,243]; } }
@@ -161,7 +161,7 @@ function secoesDoProf(p,comHA,AP){ var tm=TM(), L=(AP||idxAulas())[p]||[], ha=co
   return tm.SEC.filter(function(sec){ return L.some(function(x){ return sec.cls.indexOf(tm.clOfK[x.k])>=0; }) || ha.some(function(key){ var y=haParse(key); return sec.cls.some(function(ci){ var cl=tm.CL[ci]; return y.ini<cl.fim && cl.ini<y.fim; }); }); }); }
 function linhasPdfTurma(t){ var tp=tipoDe(t), n=tp.aulas.length, L=[];
   tp.aulas.forEach(function(h,a){ var cells=[(a+1)+"ª  "+h[0]+"–"+h[1]], fills=[null];
-    for(var d=0;d<5;d++){ var k=ST.grid[t][d*n+a]; if(k){ var x=parseK(k); cells.push(x.disc+"\n"+pnome(x.p)); fills.push(rgb(ST.profs[x.p].cor)); } else { cells.push(""); fills.push(null); } }
+    for(var d=0;d<5;d++){ var k=ST.grid[t][d*n+a]; if(k){ var x=parseK(k); cells.push(x.disc+"\n"+nomesAula(t,k)); fills.push(rgb(ST.profs[x.p].cor)); } else { cells.push(""); fills.push(null); } }
     L.push({cells:cells,fills:fills}); var pz=pausaApos(tp,a); if(pz) L.push({brk:true,cells:[pz.nome,{content:pz.ini+"–"+pz.fim,colSpan:5}]}); });
   return L; }
 function pdfProfessor(doc,p,comGerais){
@@ -190,7 +190,7 @@ function caberA4(desenha){
   for(var i=0;i<tent.length;i++){ var tmp=novoPdf(); desenha(tmp,tent[i]); if(tmp.getNumberOfPages()===1 && tmp.lastAutoTable && tmp.lastAutoTable.finalY<=204) return tent[i]; }
   return tent[tent.length-1];
 }
-function textoAula(k,duas){ var x=parseK(k); return x.disc+(duas?"\n":" · ")+pnome(x.p); }
+function textoAula(k,duas,t){ var x=parseK(k); return x.disc+(duas?"\n":" · ")+nomesAula(t,k); }
 function pdfGeral(doc,per,o){ // horário geral do período inteiro numa folha A4 deitada, como na tela
   o=o||{}; var I=IMP(), c0=I.cores; I.cores="cor";
   try{ impGeral(doc,per,o.datas,o.wk,true); } finally{ I.cores=c0; }
@@ -211,7 +211,7 @@ function linhasTurmaPdf(t,duas,datas,wk){ var tp=tipoDe(t), n=tp.aulas.length, L
   tp.aulas.forEach(function(h,a){ var cells=[(a+1)+"ª  "+h[0]+"–"+h[1]], fills=[null], bold=[false];
     for(var d=0;d<5;d++){ var s=d*n+a, k=ST.grid[t][s], vi=wk?wk.cell[datas[d]+"|"+t+"|"+s]:null;
       if(vi){ cells.push(vi.sub!=null?vi.disc+(duas?"\n":" · ")+pnome(vi.sub)+" (subst.)":"AULA VAGA"+(duas?"\n":" · ")+vi.disc+" ("+pnome(vi.p)+")"); fills.push(vi.sub!=null?[255,244,204]:[253,232,230]); bold.push(true); continue; }
-      if(k){ var x=parseK(k); cells.push(textoAula(k,duas)); fills.push(rgb(ST.profs[x.p].cor)); } else { cells.push(""); fills.push(null); } bold.push(false); }
+      if(k){ var x=parseK(k); cells.push(textoAula(k,duas,t)); fills.push(rgb(ST.profs[x.p].cor)); } else { cells.push(""); fills.push(null); } bold.push(false); }
     L.push({cells:cells,fills:fills,bold:bold}); var pz=pausaApos(tp,a); if(pz) L.push({brk:true,cells:[pz.nome,{content:pz.ini+"–"+pz.fim,colSpan:5}]}); });
   return L; }
 function pdfVagas(doc,datas){
