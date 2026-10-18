@@ -30,6 +30,7 @@ MODULOS = [
     "10_edicao_com_mouse.js",
     "11_ajustar_uma_aula.js",
     "13_formulario_professores.js",
+    "14_novo_ano_letivo.js",
     "dados_exemplo_overrides.js",
     "12_inicializacao.js",
 ]

@@ -299,6 +299,7 @@ function recarregar(){ if(typeof edCarregar==="function") edCarregar(); IEDIT=nu
 document.getElementById("xIrBackup").onclick=function(){ show("backup"); };
 var resetArm=false;
 document.getElementById("xReset").onclick=function(){ if(!edPrecisa()) return;
+  if(ST.novoAno&&!naBaseMaisNova()){ document.getElementById("xMsg").innerHTML='<div class="msg warn">A grade oficial guardada neste arquivo é do ano anterior ao '+esc(ST.novoAno.ano)+'. Para voltar a ela, recupere em Relatórios › Backup o arquivo baixado antes do novo ano.</div>'; return; }
   if(!resetArm){ resetArm=true; this.textContent="Clique de novo para confirmar"; var b=this; setTimeout(function(){ resetArm=false; b.textContent="Voltar à grade oficial"; },4000); return; }
   guardarGrade("Antes de voltar à grade oficial");
   var f=freshState(), gAnt=deep(ST.grid);

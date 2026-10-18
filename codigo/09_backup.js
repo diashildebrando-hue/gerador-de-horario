@@ -24,7 +24,8 @@ function bkBaixar(){ var nome=bkNomeArquivo(), txt=bkMontar(), ok=false;
   try{ var blob=new Blob([txt],{type:"application/json"}), a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=nome; document.body.appendChild(a); a.click(); setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); },1000); ok=true; }catch(e){}
   if(ok){ try{ localStorage.setItem(KEY+"_ultBackup",agora()); }catch(e){} logar("Backup","Backup baixado: "+nome+" ("+Math.max(1,Math.round(txt.length/1024))+" KB)"); save(); }
   if(cur==="backup") renderBackup();
-  var b=document.getElementById("bkMsg"); if(b) b.innerHTML=ok?'<div class="msg ok">Backup “'+esc(nome)+'” baixado. Guarde este arquivo em lugar seguro: pen drive, e-mail ou Google Drive.</div>':'<div class="msg bad">Não foi possível baixar aqui. Abra o gerador direto no computador (arquivo .html) e tente de novo.</div>'; }
+  var b=document.getElementById("bkMsg"); if(b) b.innerHTML=ok?'<div class="msg ok">Backup “'+esc(nome)+'” baixado. Guarde este arquivo em lugar seguro: pen drive, e-mail ou Google Drive.</div>':'<div class="msg bad">Não foi possível baixar aqui. Abra o gerador direto no computador (arquivo .html) e tente de novo.</div>';
+  return ok; }
 // lê o arquivo escolhido: aceita o backup novo e também o "arquivo de dados" antigo
 function bkInterpretar(txt){ var o; try{ o=JSON.parse(txt); }catch(e){ return {erro:"Esse arquivo não é um backup do gerador (o conteúdo não pôde ser lido)."}; }
   if(!o||typeof o!=="object") return {erro:"Esse arquivo não é um backup do gerador."};
@@ -55,7 +56,7 @@ function renderBackup(){
   var ant=null; try{ ant=localStorage.getItem(KEY+"_antesRestaurar"); }catch(e){}
   var bd=document.getElementById("bkDesfazerBox"); bd.innerHTML=ant?'<div class="msg info">Há uma cópia de como estava <b>antes da última restauração</b>. <button class="btn sm" id="bkDesfazer">Desfazer a restauração</button></div>':"";
   var bu=document.getElementById("bkDesfazer"); if(bu) bu.onclick=bkDesfazer;
-  renderBkLido(); }
+  renderBkLido(); if(typeof naRender==="function") naRender(); }
 function renderBkLido(){ var box=document.getElementById("bkLido"); if(!BK_LIDO){ box.innerHTML=""; return; }
   var L=BK_LIDO, A=bkResumo(ST), I=L.info, h='<div class="impgrp"><h4>Backup escolhido: '+esc(L.arquivo)+"</h4>";
   h+='<p style="margin:4px 0">'+(I.escola?"Escola: <b>"+esc(I.escola)+"</b>. ":"")+(I.criado&&!isNaN(new Date(I.criado))?"Feito em <b>"+esc(fmtData(I.criado))+"</b>"+(bkDiasDesde(I.criado)>0?" (há "+bkDiasDesde(I.criado)+" dias)":" (hoje)")+". ":"")+(I.quem?"Por: "+esc(I.quem)+".":"")+"</p>";

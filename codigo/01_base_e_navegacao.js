@@ -144,7 +144,9 @@ function load(){
 ST = load() || freshState();
 (function migrar(){ var f=freshState();
   if(ST.baseVersao!==(BASE.versao||"28/09")){
-    if(ST.baseVersao!==undefined || ST.gridNome!==f.gridNome){
+    // depois de começar um ano letivo novo, uma grade guardada no arquivo que é do ano anterior não substitui a do ano novo
+    if(ST.novoAno&&!naBaseMaisNova()){ ST.baseVersao=BASE.versao||"28/09"; }
+    else if(ST.baseVersao!==undefined || ST.gridNome!==f.gridNome){
       ST.snaps=ST.snaps||[]; ST.snaps.unshift({id:"v"+Date.now(),ts:agora(),nome:"Antes da atualização — "+(ST.gridNome||""),grid:deep(ST.grid),quem:"",motivo:"Atualização da grade oficial"});
       // os professores da planilha nova são ligados aos já cadastrados pelo nome (assim e-mail, celular e horários não se perdem)
       var mapa=f.profs.map(function(bp){ var i=-1; ST.profs.forEach(function(q,j){ if(i<0&&q.nome===bp.nome) i=j; }); if(i<0){ ST.profs.push(bp); i=ST.profs.length-1; } return i; });
