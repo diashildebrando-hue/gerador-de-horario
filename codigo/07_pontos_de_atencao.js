@@ -27,6 +27,7 @@ function oQueE(x){ var t=x.txt, L=x.loc||{};
   if(/prefere evitar/.test(t)) return "O professor pediu para evitar esse horário, se der. É uma preferência, não uma proibição.";
   if(/2 aulas de .* no mesmo dia/.test(t)) return "Disciplina com só 2 aulas na semana deve ficar em dias diferentes, e aqui as duas caíram no mesmo dia.";
   if(/aulas de .* na /.test(t)) return "A turma tem mais aulas da mesma disciplina num dia do que a regra permite.";
+  if(/regra de dias/.test(t)) return "Uma regra adicional diz que essa disciplina só pode ter aula em alguns dias da semana, e esta aula caiu num dia de fora.";
   if(/regra de posição/.test(t)) return "Uma regra adicional diz que essa disciplina não pode ficar nessa aula do dia.";
   if(/só .* dia\(s\) \(mínimo/.test(t)) return "Uma regra adicional pede para espalhar essa disciplina em mais dias da semana.";
   if(/aulas na .*\(máximo/.test(t)) return "O professor ficou com mais aulas nesse dia do que o máximo combinado.";

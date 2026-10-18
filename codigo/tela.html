@@ -428,6 +428,13 @@ table.g.compacto .dayhead .vt{font-size:12px;padding:2px 3px}
       <div class="row" style="margin-top:8px"><button class="btn sm" id="pCores">Sortear cores novas (sem repetir)</button></div></div>
     <div class="card" id="pDet"></div>
   </div>
+  <div class="card" style="margin-top:12px">
+    <h3 style="font-size:14px;margin:0 0 6px">Formulário para os professores</h3>
+    <p class="small">Os professores preenchem num <b>Google Formulário</b> quando podem dar aula e os pedidos deles (as turmas e disciplinas continuam com a coordenação). Cada um recebe um <b>comprovante por e-mail</b> com o número do protocolo, todas as respostas ficam guardadas numa planilha, e o gerador <b>importa</b> tudo para cá.</p>
+    <div class="row"><button class="btn sm" id="fmCriar">1. Criar o formulário no Google</button><button class="btn sm" id="fmImpBtn">2. Importar as respostas (.csv)</button><input type="file" id="fmArq" accept=".csv,text/csv" hidden aria-label="Arquivo .csv das respostas"></div>
+    <p class="small" style="margin:6px 0 0">Para importar: abra a planilha de respostas › <b>Arquivo › Fazer download › Valores separados por vírgula (.csv)</b> e escolha esse arquivo aqui.</p>
+    <div id="fmBox"></div>
+  </div>
 </section>
 
 
@@ -528,6 +535,7 @@ table.g.compacto .dayhead .vt{font-size:12px;padding:2px 3px}
         <option value="maxdia">Máximo de aulas por dia do professor</option>
         <option value="dialivre">Professor com pelo menos 1 dia sem aula</option>
         <option value="posicao">Disciplina não pode em certas aulas (ex.: 1ª ou última)</option>
+        <option value="dias">Disciplina só em alguns dias da semana (ex.: recomposição de terça a quinta)</option>
         <option value="espalhar">Espalhar a disciplina em pelo menos X dias</option>
         <option value="simult">Máximo de turmas com a disciplina ao mesmo tempo (ex.: quadra)</option>
       </select></label>

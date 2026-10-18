@@ -48,7 +48,7 @@ function freshState1(){
   return {
     v:1, turmas:deep(BASE.turmas), profs:profs0, matriz:matriz, pares:deep(BASE.pares), siglas:deep(BASE.siglas),
     regras:{max:2,two:true,par:true,late:true,cross:true,gap:true,sep:false,intervalo:true,minBreak:15},
-    horarios:deep(BASE.horarios), extras:[], locks:{}, hist:[], snaps:[], histLimite:15, ctx:{quem:"",motivo:""},
+    horarios:deep(BASE.horarios), extras:deep(BASE.extras||[]), locks:{}, hist:[], snaps:[], histLimite:15, ctx:{quem:"",motivo:""},
     haLocais:["Sala dos professores","Biblioteca","Laboratório de informática","Sala de planejamento","Em casa (formador)"], haLocPad:{},
     aviso:{base:null, baseTs:null, msg:null, edits:{}, enviados:{}, anexos:{indiv:true,ha:true,turmas:false,gerais:{},eq:false}, rem:"Equipe pedagógica", data:""},
     equip:{chrome:"",tablet:"",robo:11,inf:"M",bib:"M",tbBib:false,chBib:false,pri:DEF_PRI.map(function(x){return {disc:x[0],regra:x[1]};}),robo_d:["ROB","E.D.P ROB"]},
@@ -154,6 +154,8 @@ ST = load() || freshState();
       var dif=0; f.grid.forEach(function(row,t){ row.forEach(function(k,s){ if((ST.grid[t]||[])[s]!==k) dif++; }); });
       ST.matriz=f.matriz; ST.grid=f.grid; ST.turmas=f.turmas; ST.tipos=f.tipos; ST.gridNome=f.gridNome; ST.ha=null; ST.eq=null; ST.locks={};
       if(ST.ausencias&&ST.ausencias.length) ST._reconciliar=gAnt;
+      // regras novas que vieram junto com a planilha (não duplica as que já existem)
+      ST.extras=ST.extras||[]; (BASE.extras||[]).forEach(function(r){ var j=JSON.stringify(r); if(!ST.extras.some(function(e){ return JSON.stringify(e)===j; })) ST.extras.push(deep(r)); });
       ST.hist=ST.hist||[]; ST.hist.unshift({ts:agora(),tipo:"Grade atualizada",txt:"Grade oficial atualizada com a planilha de "+(BASE.versao||"")+": "+dif+" aulas diferentes da grade que estava em uso (a anterior ficou guardada em Grades anteriores).",quem:"",motivo:"Planilha enviada pela coordenação"});
     }
     ST.baseVersao=BASE.versao||"28/09";
@@ -161,7 +163,7 @@ ST = load() || freshState();
   ["tipos","extras","locks","hist","snaps","histLimite","ctx","aviso","haLocais","haLocPad","ausencias","externo"].forEach(function(k){ if(ST[k]==null) ST[k]=f[k]; });
   if(!ST.aviso.base){ ST.aviso.base=deep(ST.grid); ST.aviso.baseTs=agora(); }
   if(!ST.aviso.anexos.gerais) ST.aviso.anexos.gerais={};
-  ST.profs.forEach(function(p){ if(p.email==null) p.email=""; if(p.cel==null) p.cel=""; if(!p.ind) p.ind={}; });
+  ST.profs.forEach(function(p){ if(p.email==null) p.email=""; if(p.cel==null) p.cel=""; if(!p.ind) p.ind={}; if(/^#[0-9a-fA-F]{6}$/.test(p.cor||"")&&corContraste(p.cor)<4.5) p.cor=corLegivel(p.cor); });
   ST.turmas.forEach(function(tm){ if(!tm.tipo||!tipoById(tm.tipo,true)) tm.tipo=ST.tipos[0].id; });
   Object.keys(f.regras).forEach(function(k){ if(ST.regras[k]==null) ST.regras[k]=f.regras[k]; });
   ST.turmas.forEach(function(tm,t){ ajustarTamanho(t); });

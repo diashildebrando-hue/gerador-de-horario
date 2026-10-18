@@ -428,6 +428,13 @@ table.g.compacto .dayhead .vt{font-size:12px;padding:2px 3px}
       <div class="row" style="margin-top:8px"><button class="btn sm" id="pCores">Sortear cores novas (sem repetir)</button></div></div>
     <div class="card" id="pDet"></div>
   </div>
+  <div class="card" style="margin-top:12px">
+    <h3 style="font-size:14px;margin:0 0 6px">Formulário para os professores</h3>
+    <p class="small">Os professores preenchem num <b>Google Formulário</b> quando podem dar aula e os pedidos deles (as turmas e disciplinas continuam com a coordenação). Cada um recebe um <b>comprovante por e-mail</b> com o número do protocolo, todas as respostas ficam guardadas numa planilha, e o gerador <b>importa</b> tudo para cá.</p>
+    <div class="row"><button class="btn sm" id="fmCriar">1. Criar o formulário no Google</button><button class="btn sm" id="fmImpBtn">2. Importar as respostas (.csv)</button><input type="file" id="fmArq" accept=".csv,text/csv" hidden aria-label="Arquivo .csv das respostas"></div>
+    <p class="small" style="margin:6px 0 0">Para importar: abra a planilha de respostas › <b>Arquivo › Fazer download › Valores separados por vírgula (.csv)</b> e escolha esse arquivo aqui.</p>
+    <div id="fmBox"></div>
+  </div>
 </section>
 
 
@@ -528,6 +535,7 @@ table.g.compacto .dayhead .vt{font-size:12px;padding:2px 3px}
         <option value="maxdia">Máximo de aulas por dia do professor</option>
         <option value="dialivre">Professor com pelo menos 1 dia sem aula</option>
         <option value="posicao">Disciplina não pode em certas aulas (ex.: 1ª ou última)</option>
+        <option value="dias">Disciplina só em alguns dias da semana (ex.: recomposição de terça a quinta)</option>
         <option value="espalhar">Espalhar a disciplina em pelo menos X dias</option>
         <option value="simult">Máximo de turmas com a disciplina ao mesmo tempo (ex.: quadra)</option>
       </select></label>
@@ -749,9 +757,13 @@ table.g.compacto .dayhead .vt{font-size:12px;padding:2px 3px}
     for (var q0 = 0; q0 < P; q0++) { maxDiaL.push(maxDia[q0] ? [{ n: maxDia[q0], w: W.maxDia }] : []); seqL.push([]); }
     var NPER = 4, posMask = new Int32Array(nDisc * NPER), posW = new Float64Array(nDisc);
     var spL = [], simL = []; for (var d0 = 0; d0 < nDisc; d0++) { spL.push([]); simL.push([]); }
+    // disciplina só em alguns dias: máscara dos dias proibidos por disciplina
+    var dayBad = new Int32Array(nDisc), dayW = new Float64Array(nDisc), dayTxt = []; for (var d1 = 0; d1 < nDisc; d1++) dayTxt.push("");
+    var DCURTO = ["Seg", "Ter", "Qua", "Qui", "Sex"];
     var hasSpread = false, hasSim = false;
     function profsOf(r) { if (r.p == null || r.p < 0) { var a = []; for (var i2 = 0; i2 < P; i2++) a.push(i2); return a; } return r.p < P ? [r.p] : []; }
-    function discsOf(r) { if (r.disc === "*") { var a = []; for (var i3 = 0; i3 < nDisc; i3++) a.push(i3); return a; } return (r.disc in discIds) ? [discIds[r.disc]] : []; }
+    function discsOf(r) { if (r.disc === "@recomp") { var rr = []; var RD = { "RAM": 1, "RAP": 1, "L.RAP": 1 }; Object.keys(discIds).forEach(function (k) { if (RD[k]) rr.push(discIds[k]); }); return rr; }
+      if (r.disc === "*") { var a = []; for (var i3 = 0; i3 < nDisc; i3++) a.push(i3); return a; } return (r.disc in discIds) ? [discIds[r.disc]] : []; }
     (opts.extras || []).forEach(function (r) {
       var w = RW(r.forca), n = +r.n || 0;
       if (r.tipo === "seguidas" && n > 0) profsOf(r).forEach(function (p) { seqL[p].push({ n: n, w: w }); });
@@ -763,13 +775,15 @@ table.g.compacto .dayhead .vt{font-size:12px;padding:2px 3px}
         posW[d] = Math.max(posW[d], w);
       });
       else if (r.tipo === "espalhar") { hasSpread = true; discsOf(r).forEach(function (d) { spL[d].push({ dias: +r.dias || 3, min: +r.minAulas || 0, w: w }); }); }
+      else if (r.tipo === "dias") { var ok = 0; (r.dias || []).forEach(function (d) { if (d >= 0 && d <= 4) ok |= 1 << d; }); if (!ok || ok === 31) return;
+        discsOf(r).forEach(function (d) { dayBad[d] |= 31 & ~ok; dayW[d] = Math.max(dayW[d], w); var pode = []; for (var z = 0; z < 5; z++) if (!(dayBad[d] & (1 << z))) pode.push(DCURTO[z]); dayTxt[d] = pode.join(", "); }); }
       else if (r.tipo === "simult" && n > 0) { hasSim = true; discsOf(r).forEach(function (d) { simL[d].push({ n: n, w: w }); }); }
     });
     var secTS = D.secTS || TS.map(function () { return 0; });
     return { D: D, W: W, T: T, P: P, K: K, DK: DK, TS: TS, OVL: OVL, recess: D.recess || [], L: L, nA: nA, tsOf: tsOf, per: per,
       blk: blk, maxDia: maxDia, conc: conc, partners: partners, pares: pares, parA: parA, lr: lr, maxSame: opts.maxSamePerDay || 2, nDisc: nDisc, discIds: discIds,
       minBreak: opts.minBreak == null ? 15 : +opts.minBreak, NPER: NPER,
-      maxDiaL: maxDiaL, seqL: seqL, livre: livre, posMask: posMask, posW: posW, secTS: secTS,
+      maxDiaL: maxDiaL, seqL: seqL, livre: livre, posMask: posMask, posW: posW, dayBad: dayBad, dayW: dayW, dayTxt: dayTxt, secTS: secTS,
       spL: spL, hasSpread: hasSpread, simL: simL, hasSim: hasSim };
   }
 
@@ -855,6 +869,7 @@ table.g.compacto .dayhead .vt{font-size:12px;padding:2px 3px}
       var li = row[d * n + a]; if (li < 0) continue;
       var l = M.L[li], k = ids.indexOf(l.d);
       if (M.posMask[l.d * M.NPER + pq] & (1 << a)) cost += M.posW[l.d];
+      if (M.dayBad[l.d] & (1 << d)) cost += M.dayW[l.d];
       if (k < 0) { ids.push(l.d); cnt.push(1); adj.push(0); first.push(li); k = ids.length - 1; } else cnt[k]++;
       if (a > 0) { var pl = row[d * n + a - 1]; if (pl >= 0 && M.L[pl].d === l.d) { adj[k]++; if (a >= n - 2) cost += W.gemLate; } }
     }
@@ -1002,6 +1017,7 @@ table.g.compacto .dayhead .vt{font-size:12px;padding:2px 3px}
         for (var a = 0; a < n; a++) { var li3 = S.g[t3][d3 * n + a]; if (li3 < 0) continue; var l3 = M.L[li3]; c[l3.disc] = (c[l3.disc] || 0) + 1; fl[l3.disc] = l3;
           if (a > 0) { var pl = S.g[t3][d3 * n + a - 1]; if (pl >= 0 && M.L[pl].d === l3.d) adj[l3.disc] = 1; }
           if (M.posMask[l3.d * M.NPER + M.per[t3]] & (1 << a)) out.push({ loc: { t: t3, d: d3, disc: l3.disc }, tipo: tipo(M.posW[l3.d]), txt: D.turmas[t3].nome + ": " + l3.disc + " na " + (a + 1) + "ª aula de " + DIAS[d3] + " (regra de posição)" });
+          if (M.dayBad[l3.d] & (1 << d3)) out.push({ loc: { t: t3, d: d3, disc: l3.disc }, tipo: tipo(M.dayW[l3.d]), txt: D.turmas[t3].nome + ": " + l3.disc + " na " + (a + 1) + "ª aula de " + DIAS[d3] + " (regra de dias: só " + M.dayTxt[l3.d] + ")" });
           if (M.spL[l3.d].length) { var o = seen[l3.disc] || (seen[l3.disc] = { n: 0, mask: 0, d: l3.d }); o.n++; o.mask |= 1 << d3; }
         }
         Object.keys(c).forEach(function (disc) {
@@ -1196,7 +1212,7 @@ function freshState1(){
   return {
     v:1, turmas:deep(BASE.turmas), profs:profs0, matriz:matriz, pares:deep(BASE.pares), siglas:deep(BASE.siglas),
     regras:{max:2,two:true,par:true,late:true,cross:true,gap:true,sep:false,intervalo:true,minBreak:15},
-    horarios:deep(BASE.horarios), extras:[], locks:{}, hist:[], snaps:[], histLimite:15, ctx:{quem:"",motivo:""},
+    horarios:deep(BASE.horarios), extras:deep(BASE.extras||[]), locks:{}, hist:[], snaps:[], histLimite:15, ctx:{quem:"",motivo:""},
     haLocais:["Sala dos professores","Biblioteca","Laboratório de informática","Sala de planejamento","Em casa (formador)"], haLocPad:{},
     aviso:{base:null, baseTs:null, msg:null, edits:{}, enviados:{}, anexos:{indiv:true,ha:true,turmas:false,gerais:{},eq:false}, rem:"Equipe pedagógica", data:""},
     equip:{chrome:"",tablet:"",robo:11,inf:"M",bib:"M",tbBib:false,chBib:false,pri:DEF_PRI.map(function(x){return {disc:x[0],regra:x[1]};}),robo_d:["ROB","E.D.P ROB"]},
@@ -1302,6 +1318,8 @@ ST = load() || freshState();
       var dif=0; f.grid.forEach(function(row,t){ row.forEach(function(k,s){ if((ST.grid[t]||[])[s]!==k) dif++; }); });
       ST.matriz=f.matriz; ST.grid=f.grid; ST.turmas=f.turmas; ST.tipos=f.tipos; ST.gridNome=f.gridNome; ST.ha=null; ST.eq=null; ST.locks={};
       if(ST.ausencias&&ST.ausencias.length) ST._reconciliar=gAnt;
+      // regras novas que vieram junto com a planilha (não duplica as que já existem)
+      ST.extras=ST.extras||[]; (BASE.extras||[]).forEach(function(r){ var j=JSON.stringify(r); if(!ST.extras.some(function(e){ return JSON.stringify(e)===j; })) ST.extras.push(deep(r)); });
       ST.hist=ST.hist||[]; ST.hist.unshift({ts:agora(),tipo:"Grade atualizada",txt:"Grade oficial atualizada com a planilha de "+(BASE.versao||"")+": "+dif+" aulas diferentes da grade que estava em uso (a anterior ficou guardada em Grades anteriores).",quem:"",motivo:"Planilha enviada pela coordenação"});
     }
     ST.baseVersao=BASE.versao||"28/09";
@@ -1309,7 +1327,7 @@ ST = load() || freshState();
   ["tipos","extras","locks","hist","snaps","histLimite","ctx","aviso","haLocais","haLocPad","ausencias","externo"].forEach(function(k){ if(ST[k]==null) ST[k]=f[k]; });
   if(!ST.aviso.base){ ST.aviso.base=deep(ST.grid); ST.aviso.baseTs=agora(); }
   if(!ST.aviso.anexos.gerais) ST.aviso.anexos.gerais={};
-  ST.profs.forEach(function(p){ if(p.email==null) p.email=""; if(p.cel==null) p.cel=""; if(!p.ind) p.ind={}; });
+  ST.profs.forEach(function(p){ if(p.email==null) p.email=""; if(p.cel==null) p.cel=""; if(!p.ind) p.ind={}; if(/^#[0-9a-fA-F]{6}$/.test(p.cor||"")&&corContraste(p.cor)<4.5) p.cor=corLegivel(p.cor); });
   ST.turmas.forEach(function(tm){ if(!tm.tipo||!tipoById(tm.tipo,true)) tm.tipo=ST.tipos[0].id; });
   Object.keys(f.regras).forEach(function(k){ if(ST.regras[k]==null) ST.regras[k]=f.regras[k]; });
   ST.turmas.forEach(function(tm,t){ ajustarTamanho(t); });
@@ -2143,6 +2161,7 @@ function mascaraFone(el){ var d=el.value.replace(/\D/g,""); if(d.length>11&&d.in
   if(d.length>6) r="("+d.slice(0,2)+") "+d.slice(2,d.length===11?7:6)+"-"+d.slice(d.length===11?7:6);
   el.value=r; }
 function renderProfs(){
+  if(typeof fmIniciar==="function") fmIniciar();
   var q=(document.getElementById("pBusca").value||"").toLowerCase(), tm=TM();
   var cnt=ST.profs.map(function(){ return 0; }); ST.matriz.forEach(function(r){ cnt[r.p]+=r.n; });
   document.getElementById("pList").innerHTML=ST.profs.map(function(p,i){return i;}).sort(function(a,b){ return ST.profs[a].nome.localeCompare(ST.profs[b].nome); }).filter(function(i){ var p=ST.profs[i]; if(p.nome==="(excluído)"&&q.indexOf("exclu")<0) return false; return !q||p.nome.toLowerCase().indexOf(q)>=0||(p.completo||"").toLowerCase().indexOf(q)>=0; }).map(function(i){
@@ -2223,15 +2242,19 @@ document.getElementById("pAdd").onclick=function(){
   PSEL=ST.profs.length-1; document.getElementById("pNovo").value=""; save(); _filled=false; CACHE=null; renderProfs();
 };
 function hex2rgb(h){ h=h.replace("#",""); return [parseInt(h.slice(0,2),16),parseInt(h.slice(2,4),16),parseInt(h.slice(4,6),16)]; }
+// contraste do texto escuro da grade (#17212b) sobre a cor do professor: precisa ser pelo menos 4,5 (leitura fácil)
+function corLum(h){ return hex2rgb(h).map(function(v){ v/=255; return v<=0.03928?v/12.92:Math.pow((v+0.055)/1.055,2.4); }).reduce(function(s,v,i){ return s+v*[0.2126,0.7152,0.0722][i]; },0); }
+function corContraste(h){ var a=corLum(h), b=corLum("#17212b"); return (Math.max(a,b)+0.05)/(Math.min(a,b)+0.05); }
+function corLegivel(h){ var c=h, n=0; while(corContraste(c)<4.6&&n<20){ var r=hex2rgb(c).map(function(v){ return Math.min(255,Math.round(v+(255-v)*0.12)); }); c="#"+r.map(function(v){ return ("0"+v.toString(16)).slice(-2); }).join(""); n++; } return c; }
 function corDist(a,b){ var x=hex2rgb(a), y=hex2rgb(b); var rm=(x[0]+y[0])/2, dr=x[0]-y[0], dg=x[1]-y[1], db=x[2]-y[2]; return Math.sqrt((2+rm/256)*dr*dr+4*dg*dg+(2+(255-rm)/256)*db*db); }
 function sortearCores(n){
   var cores=[], tent=0, minD=70;
-  while(cores.length<n && tent<20000){ tent++;
+  while(cores.length<n && tent<20000){ tent++; if(tent%2000===0) minD-=6;
     var c=hsl2hex(Math.random(), 0.45+Math.random()*0.4, 0.70+Math.random()*0.16);
+    if(corContraste(c)<4.6) continue;
     if(cores.every(function(x){ return corDist(x,c)>=minD; })) cores.push(c);
-    if(tent%2000===0) minD-=6;
   }
-  while(cores.length<n) cores.push(hsl2hex(cores.length*0.618%1,0.6,0.8));
+  while(cores.length<n) cores.push(corLegivel(hsl2hex(cores.length*0.618%1,0.6,0.8)));
   return cores;
 }
 document.getElementById("pCores").onclick=function(){ var c=sortearCores(ST.profs.length); ST.profs.forEach(function(p,i){ p.cor=c[i]; }); logar("Professor","Cores de todos os professores sorteadas de novo"); save(); renderProfs(); };
@@ -2388,15 +2411,17 @@ function camposExtra(){
   if(t==="seguidas"||t==="maxdia") h='<label>Professor<br><select id="xP">'+profOpts(true)+'</select></label><label>Máximo<br><input type="number" id="xN" min="1" max="12" value="'+(t==="seguidas"?4:8)+'"></label>';
   else if(t==="dialivre") h='<label>Professor<br><select id="xP">'+profOpts(true)+"</select></label>";
   else if(t==="posicao"){ var a=[]; for(var i=1;i<=maxN;i++) a.push(i); h='<label>Disciplina<br><select id="xD">'+discOpts(false)+'</select></label><label>Período<br><select id="xTu"><option value="-1">Todos</option>'+PERIODOS.map(function(p,i){ return '<option value="'+i+'">'+p+"</option>"; }).join("")+'</select></label><span class="small">Não pode na:<br>'+a.map(function(a){ return '<label class="small" style="margin-right:6px"><input type="checkbox" class="xA" value="'+a+'"'+(a===1?" checked":"")+"> "+a+"ª</label>"; }).join("")+"</span>"; }
+  else if(t==="dias") h='<label>Disciplina<br><select id="xD"><option value="@recomp">Recomposição (RAM, RAP, L.RAP)</option>'+discOpts(false)+'</select></label><span class="small">Pode ter aula só na:<br>'+DIAS.map(function(dn,d){ return '<label class="small" style="margin-right:6px"><input type="checkbox" class="xDia" value="'+d+'"'+(d>=1&&d<=3?" checked":"")+"> "+dn+"</label>"; }).join("")+"</span>";
   else if(t==="espalhar") h='<label>Disciplina<br><select id="xD">'+discOpts(true)+'</select></label><label>Mínimo de dias<br><input type="number" id="xDias" min="2" max="5" value="3"></label><label>Quando tiver a partir de<br><input type="number" id="xMinA" min="2" max="12" value="4"> aulas</label>';
   else if(t==="simult") h='<label>Disciplina<br><select id="xD">'+discOpts(false)+'</select></label><label>Máximo de turmas<br><input type="number" id="xN" min="1" max="10" value="2"></label>';
   document.getElementById("xCampos").innerHTML=h;
   if(t==="simult"){ var sel=document.getElementById("xD"); if([].some.call(sel.options,function(o){return o.value==="ED.FIS";})) sel.value="ED.FIS"; }
 }
 function descExtra(r){
-  var quem=r.p==null||r.p<0?"todos os professores":pnome(r.p), dis=r.disc==="*"?"todas as disciplinas":r.disc;
+  var quem=r.p==null||r.p<0?"todos os professores":pnome(r.p), dis=r.disc==="*"?"todas as disciplinas":r.disc==="@recomp"?"Recomposição (RAM, RAP, L.RAP)":r.disc;
   return {seguidas:"No máximo "+r.n+" aulas seguidas — "+quem, maxdia:"No máximo "+r.n+" aulas por dia — "+quem, dialivre:"Pelo menos 1 dia sem aula — "+quem,
     posicao:dis+" não pode na "+(r.aulas||[]).map(function(a){return a+"ª";}).join(", ")+" aula"+(r.turno>=0?" ("+PERIODOS[r.turno].toLowerCase()+")":""),
+    dias:dis+" só na "+(r.dias||[]).slice().sort().map(function(d){ return DIAS[d]; }).join(", "),
     espalhar:dis+": espalhar em pelo menos "+r.dias+" dias (quando tiver "+r.minAulas+" aulas ou mais)", simult:"No máximo "+r.n+" turmas com "+dis+" ao mesmo tempo"}[r.tipo]||r.tipo;
 }
 document.getElementById("xTipo").onchange=camposExtra;
@@ -2406,9 +2431,12 @@ document.getElementById("xAdd").onclick=function(){
   if(g("xP")!=null) r.p=+g("xP"); if(g("xN")!=null) r.n=+g("xN"); if(g("xD")!=null) r.disc=g("xD");
   if(t==="posicao"){ r.turno=+g("xTu"); r.aulas=[].slice.call(document.querySelectorAll(".xA:checked")).map(function(x){return +x.value;}); if(!r.aulas.length) return; }
   if(t==="espalhar"){ r.dias=+g("xDias"); r.minAulas=+g("xMinA"); }
+  if(t==="dias"){ r.dias=[].slice.call(document.querySelectorAll(".xDia:checked")).map(function(x){ return +x.value; }); if(!r.dias.length||r.dias.length===5){ alertaRegra(r.dias.length?"Com os 5 dias marcados a regra não muda nada. Desmarque os dias em que essa disciplina não pode.":"Marque pelo menos um dia."); return; } }
   ST.extras.push(r); logar("Regras","Nova regra ("+(r.forca==="rigida"?"rígida":"preferência")+"): "+descExtra(r)); save(); CACHE=null; renderRegras();
 };
+function alertaRegra(txt){ var c=document.getElementById("xCampos"); var m=document.getElementById("xMsg"); if(!m){ m=document.createElement("div"); m.id="xMsg"; c.parentNode.insertBefore(m,c.nextSibling); } m.innerHTML='<div class="msg warn">'+esc(txt)+"</div>"; }
 function renderRegras(){
+  var xm=document.getElementById("xMsg"); if(xm) xm.innerHTML="";
   fillSelectsOnce();
   var R=ST.regras; document.getElementById("rMax").value=R.max; document.getElementById("rMin").value=R.minBreak;
   [["rTwo","two"],["rPar","par"],["rLate","late"],["rCross","cross"],["rGap","gap"],["rSep","sep"],["rInt","intervalo"]].forEach(function(x){ document.getElementById(x[0]).checked=!!R[x[1]]; });
@@ -2489,7 +2517,7 @@ function renderEnvio(){
   box.innerHTML=L.map(function(p){ var pr=ST.profs[p], env=ST.aviso.enviados[p];
     return '<div class="avrow"><div class="hd"><span class="dot" style="background:'+pr.cor+'"></span><b>'+esc(pr.nome)+'</b><span class="small">'+esc(pr.email||"sem e-mail")+" · "+esc(pr.cel||"sem celular")+"</span>"+(env?'<span class="small" style="color:var(--ok)">✓ '+esc(env)+"</span>":"")+
       '<span style="flex:1"></span><button class="btn sm" data-wa="'+p+'"'+(pr.cel?"":" disabled")+'>WhatsApp</button><button class="btn sm" data-em="'+p+'"'+(pr.email?"":" disabled")+'>E-mail</button><button class="btn sm" data-pdf="'+p+'">Baixar PDF</button></div>'+
-      '<textarea rows="7" data-tx="'+p+'">'+esc(msgDe(p))+"</textarea></div>"; }).join("");
+      '<textarea rows="7" data-tx="'+p+'" aria-label="Mensagem para '+esc(pr.nome)+'">'+esc(msgDe(p))+"</textarea></div>"; }).join("");
   box.querySelectorAll("textarea[data-tx]").forEach(function(t){ t.onchange=function(){ ST.aviso.edits[+t.dataset.tx]=t.value; save(); }; });
   box.querySelectorAll("[data-wa]").forEach(function(b){ b.onclick=function(){ var p=+b.dataset.wa, t=msgDe(p);
     enviarComPdf({canal:"whatsapp",doc:docProf(p),arquivo:"horario-"+ST.profs[p].nome+".pdf",texto:t,assunto:"Horário atualizado — "+instCurto(),url:urlWa(ST.profs[p].cel,t),box:"avMsgBox",ok:function(c){ marcarEnvio(p,"WhatsApp ("+c+")"); }}); }; });
@@ -3473,6 +3501,7 @@ function oQueE(x){ var t=x.txt, L=x.loc||{};
   if(/prefere evitar/.test(t)) return "O professor pediu para evitar esse horário, se der. É uma preferência, não uma proibição.";
   if(/2 aulas de .* no mesmo dia/.test(t)) return "Disciplina com só 2 aulas na semana deve ficar em dias diferentes, e aqui as duas caíram no mesmo dia.";
   if(/aulas de .* na /.test(t)) return "A turma tem mais aulas da mesma disciplina num dia do que a regra permite.";
+  if(/regra de dias/.test(t)) return "Uma regra adicional diz que essa disciplina só pode ter aula em alguns dias da semana, e esta aula caiu num dia de fora.";
   if(/regra de posição/.test(t)) return "Uma regra adicional diz que essa disciplina não pode ficar nessa aula do dia.";
   if(/só .* dia\(s\) \(mínimo/.test(t)) return "Uma regra adicional pede para espalhar essa disciplina em mais dias da semana.";
   if(/aulas na .*\(máximo/.test(t)) return "O professor ficou com mais aulas nesse dia do que o máximo combinado.";
@@ -4049,6 +4078,231 @@ function tdRenderGerar(){ var box=document.getElementById("tdGerar"); if(!box) r
   L.sort(function(a,b){ return a.ini-b.ini; });
   out.innerHTML=L.length?'<div class="chiplist">'+L.map(function(a,i){ return '<button class="btn sm" data-tda="'+i+'">'+(ST.locks[a.t+"|"+a.s]?"🔒 ":"")+esc(a.txt)+" — tirar daqui</button>"; }).join("")+"</div>":'<span class="small">'+esc(pnome(p))+" não tem aula na "+DIAS[d].toLowerCase()+".</span>";
   out.querySelectorAll("[data-tda]").forEach(function(b){ b.onclick=function(){ var a=L[+b.dataset.tda]; tdAbrir(a.t,a.s); }; }); }
+
+// =====================================================================
+// FORMULÁRIO DOS PROFESSORES (Google Formulários)
+// 1) o gerador escreve um script que cria o formulário na conta Google da escola
+//    (o professor recebe um comprovante por e-mail, com número de protocolo);
+// 2) as respostas ficam numa planilha; baixada em .csv, o gerador importa sozinho.
+// =====================================================================
+var FM_DIAS=["Segunda","Terça","Quarta","Quinta","Sexta"];
+var FM_OPC=["Posso","Prefiro evitar","Não posso","Estou em outra escola"];
+var FM_T={nome:"Nome completo",curto:"Nome como aparece na grade",cel:"Celular (WhatsApp)",outra:"Nome da outra escola",semana:"Como você prefere as aulas na semana?",
+  maxdia:"Máximo de aulas por dia nesta escola",livre:"Gostaria de ter pelo menos 1 dia sem aula nesta escola?",gem:"Aulas geminadas (2 aulas seguidas na mesma turma)",
+  ha:"Pedidos para a hora-atividade (HA)",obs:"Observações",conf:"Confirmação"};
+var FM_PREV=null;
+
+// aulas de cada período (manhã, tarde...) somando os tipos de horário em uso: a aula vai do início mais cedo ao fim mais tarde
+function fmPeriodos(){ var P={};
+  ST.tipos.forEach(function(tp){ if(!ST.turmas.some(function(t){ return t.tipo===tp.id&&!t.excluida; })) return; var L=P[tp.periodo]=P[tp.periodo]||[];
+    tp.aulas.forEach(function(h,a){ var i=toMin(h[0]), f=toMin(h[1]); if(!L[a]) L[a]=[i,f]; else { L[a][0]=Math.min(L[a][0],i); L[a][1]=Math.max(L[a][1],f); } }); });
+  return PERIODOS.filter(function(p){ return P[p]; }).map(function(p){ return {nome:p,aulas:P[p]}; }); }
+function fmRotulo(a,x){ return (a+1)+"ª aula ("+hmP(x[0])+"–"+hmP(x[1])+")"; }
+function fmNomeEscola(){ var I=ST.inst||{}; return String(I.nome||I.nomeCurto||document.title||"Escola").replace(/^Gerador de Horário\s*—\s*/,""); }
+function fmSemAcento(s){ return String(s||"").normalize("NFD").replace(/[̀-ͯ]/g,"").toUpperCase().replace(/\s+/g," ").trim(); }
+// mesmo número de protocolo que o script põe no e-mail (data e hora do envio + um código do e-mail)
+function fmProtocolo(dt,email){ var s=dt.getFullYear()+pad2(dt.getMonth()+1)+pad2(dt.getDate())+"-"+pad2(dt.getHours())+pad2(dt.getMinutes())+pad2(dt.getSeconds()), h=0, e=String(email||"").toLowerCase();
+  for(var i=0;i<e.length;i++) h=(h*31+e.charCodeAt(i))%9000; return s+"-"+(1000+h); }
+
+// ---------- 1) script que cria o formulário ----------
+function fmScript(){
+  var per=fmPeriodos().map(function(p){ return {nome:p.nome,rotulos:p.aulas.map(function(x,a){ return fmRotulo(a,x); })}; });
+  var cfg={escola:fmNomeEscola(),ano:new Date().getFullYear(),periodos:per,dias:FM_DIAS,opcoes:FM_OPC,t:FM_T};
+  return [
+"/**",
+" * Cria o formulário \"Pedido de horário\" para os professores — Gerador de Horário (software livre, GPL-3.0).",
+" * Como usar: na conta Google da escola, abra script.google.com > Novo projeto, apague tudo, cole este texto,",
+" * clique em Salvar e depois em Executar (função criarFormulario). Na 1ª vez o Google pede autorização.",
+" * Os links do formulário e da planilha aparecem em \"Registro de execução\".",
+" */",
+"var CFG = "+JSON.stringify(cfg,null,1)+";",
+"",
+"function criarFormulario() {",
+"  var T = CFG.t;",
+"  var form = FormApp.create('Pedido de horário — ' + CFG.escola + ' — ' + CFG.ano);",
+"  form.setDescription('Preencha quando você pode dar aula e os seus pedidos para o horário de ' + CFG.ano + '. ' +",
+"    'As turmas e disciplinas continuam com a coordenação. Ao enviar, você recebe um comprovante por e-mail com o número do protocolo. ' +",
+"    'Se precisar mudar algo, é só responder de novo: vale o último envio, e os anteriores ficam guardados no histórico.');",
+"  form.setCollectEmail(true);",
+"  try { form.setRequireLogin(true); } catch (e) {}   // só quem entra com a conta da escola",
+"  form.setAllowResponseEdits(false);",
+"  form.setConfirmationMessage('Pedido recebido. Você vai receber o comprovante por e-mail em alguns minutos.');",
+"  form.addTextItem().setTitle(T.nome).setRequired(true);",
+"  form.addTextItem().setTitle(T.curto).setHelpText('Ex.: o apelido ou nome curto que aparece no horário. Se não souber, deixe em branco.');",
+"  form.addTextItem().setTitle(T.cel).setHelpText('Com DDD. Ex.: (41) 98401-6030');",
+"  CFG.periodos.forEach(function (p) {",
+"    form.addPageBreakItem().setTitle('Quando você pode dar aula — ' + p.nome)",
+"      .setHelpText('Para cada aula de cada dia, marque uma opção. Em branco conta como \"Posso\".');",
+"    CFG.dias.forEach(function (d) {",
+"      form.addGridItem().setTitle(d + '-feira — ' + p.nome).setRows(p.rotulos).setColumns(CFG.opcoes);",
+"    });",
+"  });",
+"  form.addPageBreakItem().setTitle('Pedidos');",
+"  form.addTextItem().setTitle(T.outra).setHelpText('Só se você marcou \"Estou em outra escola\" em algum horário.');",
+"  form.addMultipleChoiceItem().setTitle(T.semana).setChoiceValues(['Concentrar em menos dias', 'Espalhar pela semana', 'Tanto faz']);",
+"  var num = FormApp.createTextValidation().requireNumberBetween(1, 12).setHelpText('Um número de 1 a 12, ou deixe em branco.').build();",
+"  form.addTextItem().setTitle(T.maxdia).setHelpText('Deixe em branco se não tiver limite.').setValidation(num);",
+"  form.addMultipleChoiceItem().setTitle(T.livre).setChoiceValues(['Sim', 'Tanto faz']);",
+"  form.addMultipleChoiceItem().setTitle(T.gem).setChoiceValues(['Prefiro geminadas', 'Prefiro não ter geminadas', 'Tanto faz']);",
+"  form.addParagraphTextItem().setTitle(T.ha);",
+"  form.addParagraphTextItem().setTitle(T.obs);",
+"  form.addCheckboxItem().setTitle(T.conf).setChoiceValues(['Confirmo que as informações acima estão corretas']).setRequired(true);",
+"  var ss = SpreadsheetApp.create('Respostas — ' + form.getTitle());",
+"  ss.setSpreadsheetTimeZone('America/Sao_Paulo');",
+"  form.setDestination(FormApp.DestinationType.SPREADSHEET, ss.getId());",
+"  ScriptApp.newTrigger('enviarComprovante').forForm(form).onFormSubmit().create();",
+"  Logger.log('Link para enviar aos professores: ' + form.getPublishedUrl());",
+"  Logger.log('Editar o formulário: ' + form.getEditUrl());",
+"  Logger.log('Planilha de respostas: ' + ss.getUrl());",
+"}",
+"",
+"function protocolo(ts, email) {",
+"  var s = Utilities.formatDate(ts, 'America/Sao_Paulo', 'yyyyMMdd-HHmmss'), h = 0;",
+"  email = String(email || '').toLowerCase();",
+"  for (var i = 0; i < email.length; i++) h = (h * 31 + email.charCodeAt(i)) % 9000;",
+"  return s + '-' + (1000 + h);",
+"}",
+"function esc(s) { return String(s == null ? '' : s).replace(/[&<>\"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '\"': '&quot;' }[c]; }); }",
+"",
+"// manda o comprovante para o professor assim que ele envia o formulário",
+"function enviarComprovante(e) {",
+"  var r = e.response, email = r.getRespondentEmail();",
+"  if (!email) return;",
+"  var ts = r.getTimestamp(), prot = protocolo(ts, email), linhas = [];",
+"  r.getItemResponses().forEach(function (ir) {",
+"    var it = ir.getItem(), v = ir.getResponse();",
+"    if (it.getType() == FormApp.ItemType.GRID) {",
+"      var rows = it.asGridItem().getRows();",
+"      v = rows.map(function (rw, i) { return esc(rw) + ': <b>' + esc((v && v[i]) || 'Posso') + '</b>'; }).join('<br>');",
+"    } else v = esc(Array.isArray(v) ? v.join(', ') : v);",
+"    linhas.push('<tr><td style=\"padding:4px 8px;border:1px solid #ccc;vertical-align:top\">' + esc(it.getTitle()) + '</td><td style=\"padding:4px 8px;border:1px solid #ccc\">' + v + '</td></tr>');",
+"  });",
+"  var quando = Utilities.formatDate(ts, 'America/Sao_Paulo', \"dd/MM/yyyy 'às' HH:mm\");",
+"  MailApp.sendEmail({",
+"    to: email,",
+"    subject: 'Comprovante do pedido de horário — protocolo ' + prot,",
+"    htmlBody: '<p>Olá! Recebemos o seu pedido de horário em ' + quando + '.</p>' +",
+"      '<p><b>Protocolo: ' + prot + '</b></p>' +",
+"      '<p>Guarde este e-mail: ele é o comprovante do que você pediu. Se precisar mudar algo, responda o formulário de novo.</p>' +",
+"      '<table style=\"border-collapse:collapse;font-size:13px\">' + linhas.join('') + '</table>' +",
+"      '<p style=\"color:#666;font-size:12px\">' + esc(CFG.escola) + ' — Gerador de Horário.</p>'",
+"  });",
+"}",""].join("\n"); }
+
+function fmMostrarCriar(){
+  var box=document.getElementById("fmBox"), sc=fmScript(), per=fmPeriodos();
+  box.innerHTML='<div class="impgrp" style="margin-top:8px"><p style="margin:0 0 6px"><b>Como criar o formulário (uma vez só)</b></p><ol class="small" style="margin:0 0 8px;padding-left:18px">'+
+    '<li>Entre na <b>conta Google da escola</b> e abra <b>script.google.com</b> › <b>Novo projeto</b>.</li>'+
+    '<li>Apague o que estiver escrito, <b>cole o script</b> (botão abaixo) e clique em <b>Salvar</b>.</li>'+
+    '<li>Clique em <b>Executar</b>. Na primeira vez o Google pede autorização: clique em <b>Revisar permissões</b> e permita.</li>'+
+    '<li>Em <b>Registro de execução</b> aparecem 3 links: o do formulário (para mandar aos professores), o de editar e o da planilha de respostas.</li>'+
+    '<li>Mande o link do formulário aos professores. Cada um recebe um <b>comprovante por e-mail</b> com o número do protocolo.</li></ol>'+
+    '<p class="small" style="margin:0 0 6px">O formulário usa os horários de hoje ('+per.map(function(p){ return p.nome.toLowerCase()+": "+p.aulas.length+" aulas"; }).join(", ")+'). Se os horários mudarem, crie um formulário novo.</p>'+
+    '<div class="row"><button class="btn sm pri" id="fmCopiar">Copiar o script</button><button class="btn sm" id="fmBaixar">Baixar o script (.txt)</button></div>'+
+    '<textarea id="fmTxt" readonly aria-label="Script do formulário" style="width:100%;height:140px;margin-top:6px;font-family:monospace;font-size:11px">'+esc(sc)+'</textarea><div id="fmMsg"></div></div>';
+  document.getElementById("fmCopiar").onclick=function(){ var t=document.getElementById("fmTxt"), m=document.getElementById("fmMsg");
+    var ok=function(){ m.innerHTML='<div class="msg ok">Script copiado. Agora cole no script.google.com.</div>'; };
+    try{ navigator.clipboard.writeText(sc).then(ok,function(){ t.select(); document.execCommand("copy"); ok(); }); }catch(e){ t.select(); try{ document.execCommand("copy"); ok(); }catch(e2){ m.innerHTML='<div class="msg warn">Não deu para copiar sozinho. Selecione o texto e use Ctrl+C.</div>'; } } };
+  document.getElementById("fmBaixar").onclick=function(){ baixar("script-formulario-professores.txt",sc,"text/plain;charset=utf-8"); };
+}
+
+// ---------- 2) importar as respostas (.csv baixado da planilha) ----------
+function fmCSV(txt){ var out=[], row=[], f="", q=false; txt=String(txt).replace(/^﻿/,"");
+  for(var i=0;i<txt.length;i++){ var c=txt[i];
+    if(q){ if(c==='"'){ if(txt[i+1]==='"'){ f+='"'; i++; } else q=false; } else f+=c; continue; }
+    if(c==='"') q=true; else if(c===","){ row.push(f); f=""; } else if(c==="\n"){ row.push(f); out.push(row); row=[]; f=""; } else if(c!=="\r") f+=c; }
+  if(f!==""||row.length){ row.push(f); out.push(row); }
+  return out.filter(function(r){ return r.some(function(x){ return String(x).trim()!==""; }); }); }
+function fmData(s){ var m=String(s||"").match(/(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}):(\d{2})(?::(\d{2}))?/); if(m) return new Date(+m[3],+m[2]-1,+m[1],+m[4],+m[5],+(m[6]||0));
+  m=String(s||"").match(/(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2}):?(\d{2})?/); if(m) return new Date(+m[1],+m[2]-1,+m[3],+m[4],+m[5],+(m[6]||0)); return null; }
+function fmLer(txt){
+  var R=fmCSV(txt); if(R.length<2) return {erro:"O arquivo não tem respostas."};
+  var H=R[0].map(function(h){ return String(h).trim(); }), col={}, grade=[], per=fmPeriodos();
+  var acha=function(ini){ for(var i=0;i<H.length;i++) if(H[i].indexOf(ini)===0) return i; return -1; };
+  col.ts=0; col.email=-1; H.forEach(function(h,i){ if(/e-?mail/i.test(h)&&col.email<0) col.email=i; });
+  Object.keys(FM_T).forEach(function(k){ col[k]=acha(FM_T[k]); });
+  if(col.nome<0) return {erro:"Não achei a coluna “"+FM_T.nome+"”. Confira se o arquivo é a planilha de respostas do formulário criado por este gerador."};
+  H.forEach(function(h,i){ var m=h.match(/^(Segunda|Terça|Quarta|Quinta|Sexta)-feira — (.+?) \[(\d+)ª aula/); if(!m) return; var pp=per.filter(function(p){ return p.nome===m[2]; })[0], a=+m[3]-1;
+    if(pp&&pp.aulas[a]) grade.push({i:i,d:FM_DIAS.indexOf(m[1]),ini:pp.aulas[a][0],fim:pp.aulas[a][1],per:pp.nome,a:a}); });
+  if(!grade.length) return {erro:"Não achei as perguntas de horário (Segunda-feira — Manhã…). Os horários da escola podem ter mudado depois que o formulário foi criado."};
+  var resp=R.slice(1).map(function(r){ var g=function(k){ return col[k]>=0?String(r[col[k]]||"").trim():""; }, ts=fmData(r[col.ts]);
+    var email=col.email>=0?String(r[col.email]||"").trim():"";
+    return {ts:ts, tsTxt:String(r[col.ts]||""), email:email, protocolo:ts?fmProtocolo(ts,email):"", nome:g("nome"), curto:g("curto"), cel:g("cel"), outra:g("outra"), semana:g("semana"), maxdia:g("maxdia"), livre:g("livre"), gem:g("gem"), ha:g("ha"), obs:g("obs"),
+      horas:grade.map(function(x){ var v=String(r[x.i]||"").trim(); return {d:x.d,ini:x.ini,fim:x.fim,per:x.per,a:x.a,v:v===FM_OPC[1]?1:v===FM_OPC[2]?2:v===FM_OPC[3]?4:0}; })}; }).filter(function(x){ return x.nome||x.email; });
+  // vale o último envio de cada professor; os outros ficam no histórico
+  var por={}; resp.forEach(function(x){ var k=(x.email||fmSemAcento(x.nome)).toLowerCase(); (por[k]=por[k]||[]).push(x); });
+  var lista=Object.keys(por).map(function(k){ var L=por[k].sort(function(a,b){ return (a.ts||0)-(b.ts||0); }); var u=L[L.length-1]; u.envios=L.length; return u; });
+  return {lista:lista,todas:resp}; }
+function fmAchar(x){ var c=fmSemAcento(x.curto), n=fmSemAcento(x.nome), e=String(x.email||"").toLowerCase(), r=-1;
+  ST.profs.forEach(function(p,i){ if(r>=0||p.nome==="(excluído)") return; if(c&&fmSemAcento(p.nome)===c) r=i; });
+  ST.profs.forEach(function(p,i){ if(r>=0||p.nome==="(excluído)") return; if(n&&fmSemAcento(p.completo)===n) r=i; });
+  ST.profs.forEach(function(p,i){ if(r>=0||p.nome==="(excluído)") return; if(e&&String(p.email||"").toLowerCase()===e) r=i; });
+  return r; }
+function fmResumo(x){ var n=[0,0,0,0,0]; x.horas.forEach(function(h){ n[h.v]++; });
+  var t=[]; if(n[2]) t.push(n[2]+" não pode"); if(n[1]) t.push(n[1]+" evitar"); if(n[4]) t.push(n[4]+" em outra escola"); if(!t.length) t.push("pode em todos os horários");
+  if(x.semana&&x.semana!=="Tanto faz") t.push(x.semana.toLowerCase()); if(x.maxdia) t.push("máx. "+x.maxdia+"/dia"); if(x.livre==="Sim") t.push("1 dia sem aula"); return t.join(" · "); }
+function fmMostrarPrevia(){
+  var box=document.getElementById("fmBox"), P=FM_PREV; if(!P) return;
+  var ps=profsOrdem(), opts=function(sel){ return '<option value="-1"'+(sel<0?" selected":"")+'>— não importar —</option><option value="-2">+ cadastrar como professor novo</option>'+ps.map(function(i){ return '<option value="'+i+'"'+(i===sel?" selected":"")+">"+esc(ST.profs[i].nome)+"</option>"; }).join(""); };
+  box.innerHTML='<div class="impgrp" style="margin-top:8px"><p style="margin:0 0 4px"><b>'+P.lista.length+' professor(es) responderam</b> ('+P.todas.length+' envio(s) no total). Vale o último envio de cada um. Confira a quem cada resposta pertence e clique em Importar.</p>'+
+    '<div class="scroll"><table class="t"><tr><th>Resposta</th><th>Pedido</th><th>O que pediu</th><th>Ligar ao professor</th></tr>'+P.lista.map(function(x,j){
+      return '<tr><td><b>'+esc(x.nome||x.email)+'</b><br><span class="small">'+esc(x.email)+'</span></td><td class="small">'+esc(x.tsTxt)+(x.protocolo?'<br>protocolo '+esc(x.protocolo):"")+(x.envios>1?'<br>'+x.envios+' envios (vale o último)':"")+'</td><td class="small">'+esc(fmResumo(x))+'</td>'+
+        '<td><select data-fmj="'+j+'" aria-label="Professor da resposta de '+esc(x.nome||x.email)+'">'+opts(x.alvo)+'</select></td></tr>'; }).join("")+'</table></div>'+
+    '<p class="small" style="margin:6px 0">O que muda em cada professor: horários em que pode / prefere evitar / não pode, horários em outra escola (aba Outras instituições), contatos, preferências (concentrar, máximo por dia, dia sem aula) e as observações. Os horários de <b>formador</b> marcados pela coordenação são mantidos. Tudo fica no Histórico.</p>'+
+    '<div class="row"><button class="btn sm pri" id="fmImp">Importar</button><button class="btn sm" id="fmCanc">Cancelar</button></div><div id="fmMsg"></div></div>';
+  document.getElementById("fmCanc").onclick=function(){ FM_PREV=null; box.innerHTML=""; };
+  document.getElementById("fmImp").onclick=function(){ box.querySelectorAll("[data-fmj]").forEach(function(s){ P.lista[+s.dataset.fmj].alvo=+s.value; }); fmImportar(); };
+}
+function fmTemFormador(p,d,ini,fim){ var ind=ST.profs[p].ind||{}; return Object.keys(ind).some(function(k){ if(ind[k]!==3) return false; var bar=k.indexOf("|"); if(+k.slice(0,bar)!==d) return false; var r=k.slice(bar+1).split("-"); return Math.min(fim,toMin(r[1]))-Math.max(ini,toMin(r[0]))>10; }); }
+function fmImportar(){
+  var P=FM_PREV, feitos=[], E=ST.externo=ST.externo||{usar:true,margem:20,escolas:[]};
+  P.lista.forEach(function(x){ var p=x.alvo; if(p===-1||p==null) return;
+    if(p===-2){ var cc=sortearCores(ST.profs.length+1); ST.profs.push({nome:(x.curto||x.nome.split(" ")[0]||"NOVO").toUpperCase(),completo:x.nome,cor:cc[ST.profs.length]||"#dddddd",corEsc:"#333",ind:{},maxDia:null,concentrar:false,haManual:null,obs:"",email:"",cel:""}); p=ST.profs.length-1; }
+    var pr=ST.profs[p]; pr.ind=pr.ind||{};
+    if(x.nome) pr.completo=x.nome; if(x.email) pr.email=x.email; if(x.cel) pr.cel=String(x.cel).replace(/\D/g,"");
+    // horários: posso / evitar / não pode / outra escola
+    var fora=[]; x.horas.forEach(function(h){ if(h.v===0&&fmTemFormador(p,h.d,h.ini,h.fim)) return; setBlkFaixa(p,h.d,h.ini,h.fim,h.v===4?0:h.v); if(h.v===4) fora.push(h); });
+    // outra escola: vai para a aba Outras instituições (o gerador cruza os horários)
+    E.escolas.forEach(function(es){ if(es.origem==="formulario") es.itens=es.itens.filter(function(it){ return it.p!==p; }); });
+    if(fora.length){ var nm=x.outra||"Outra escola (pedido do formulário)", es=E.escolas.filter(function(z){ return z.origem==="formulario"&&fmSemAcento(z.nome)===fmSemAcento(nm); })[0];
+      if(!es){ es={id:"form"+Date.now()+E.escolas.length,nome:nm,cenario:"",arquivo:"formulário dos professores",origem:"formulario",ts:agora(),quem:ST.ctx.quem||"",itens:[]}; E.escolas.push(es); }
+      fora.forEach(function(h){ es.itens.push({p:p,d:h.d,ini:hmP(h.ini),fim:hmP(h.fim),nomeLa:pr.nome,txt:"pedido do formulário ("+h.per.toLowerCase()+", "+(h.a+1)+"ª aula)"}); }); }
+    E.escolas=E.escolas.filter(function(es){ return es.origem!=="formulario"||es.itens.length; });
+    // preferências
+    if(x.semana) pr.concentrar=/Concentrar/.test(x.semana);
+    var md=parseInt(x.maxdia,10); pr.maxDia=md>=1&&md<=12?md:null;
+    ST.extras=(ST.extras||[]).filter(function(r){ return !(r.fonte==="formulario"&&r.tipo==="dialivre"&&r.p===p); });
+    if(x.livre==="Sim") ST.extras.push({tipo:"dialivre",p:p,forca:"preferencia",fonte:"formulario"});
+    // observações: troca só o bloco do formulário, o resto que a coordenação escreveu fica
+    var limpa=function(v){ return String(v||"").replace(/[\r\n]+/g," ").replace(/[\[\]]/g,"").trim(); }; x.ha=limpa(x.ha); x.obs=limpa(x.obs); x.outra=limpa(x.outra);
+    var bloco=["[Formulário "+(x.tsTxt||"")+(x.protocolo?" · protocolo "+x.protocolo:"")+"]"];
+    if(x.semana) bloco.push("Semana: "+x.semana+"."); if(x.gem&&x.gem!=="Tanto faz") bloco.push("Geminadas: "+x.gem.toLowerCase()+"."); if(x.ha) bloco.push("HA: "+x.ha); if(x.obs) bloco.push("Obs.: "+x.obs);
+    if(fora.length) bloco.push("Em outra escola ("+(x.outra||"não informou o nome")+"): "+fora.length+" horário(s).");
+    pr.obs=String(pr.obs||"").replace(/\s*\[Formulário[^\]]*\][^\[]*$/,"").trim(); pr.obs=(pr.obs?pr.obs+"\n":"")+bloco.join(" ");
+    pr.formulario={ts:x.tsTxt,protocolo:x.protocolo,envios:x.envios};
+    feitos.push(pr.nome+" ("+fmResumo(x)+")");
+  });
+  // guarda todas as respostas (também as antigas) como histórico dos pedidos
+  var H=ST.formRespostas=ST.formRespostas||[], vis={}; H.forEach(function(r){ vis[r.protocolo+"|"+r.email]=1; });
+  P.todas.forEach(function(x){ var k=x.protocolo+"|"+x.email; if(vis[k]) return; vis[k]=1; H.push({protocolo:x.protocolo,ts:x.tsTxt,email:x.email,nome:x.nome,curto:x.curto,cel:x.cel,outra:x.outra,semana:x.semana,maxdia:x.maxdia,livre:x.livre,gem:x.gem,ha:x.ha,obs:x.obs,horas:x.horas.filter(function(h){ return h.v; }).map(function(h){ return [h.d,h.ini,h.fim,h.v]; })}); });
+  if(H.length>2000) H.splice(0,H.length-2000);
+  _EXT=null; _TM=null; CACHE=null;
+  if(feitos.length) logar("Professor","Pedidos do formulário importados ("+feitos.length+"): "+feitos.join("; "),{motivo:ST.ctx.motivo||"Formulário dos professores"}); else save();
+  FM_PREV=null; renderProfs();
+  document.getElementById("fmBox").innerHTML='<div class="msg ok">'+(feitos.length?"Pronto: "+feitos.length+" professor(es) atualizados. Para a grade obedecer, use “Ajustar a grade atual” na aba Gerar.":"Nenhuma resposta foi importada.")+'</div>';
+}
+function fmIniciar(){
+  var b=document.getElementById("fmCriar"); if(!b||b._ok) return; b._ok=1;
+  b.onclick=fmMostrarCriar;
+  var arq=document.getElementById("fmArq");
+  document.getElementById("fmImpBtn").onclick=function(){ arq.value=""; arq.click(); };
+  arq.onchange=function(){ var f=arq.files&&arq.files[0]; if(!f) return; var rd=new FileReader();
+    rd.onload=function(){ var r=fmLer(rd.result), box=document.getElementById("fmBox");
+      if(r.erro){ box.innerHTML='<div class="msg warn">'+esc(r.erro)+"</div>"; return; }
+      r.lista.forEach(function(x){ x.alvo=fmAchar(x); }); FM_PREV=r; fmMostrarPrevia(); };
+    rd.onerror=function(){ document.getElementById("fmBox").innerHTML='<div class="msg warn">Não foi possível ler o arquivo.</div>'; };
+    rd.readAsText(f,"utf-8"); };
+}
 
 // =====================================================================
 // VERSÃO MODELO (para outras escolas): começa só com EXEMPLOS, um em cada lugar

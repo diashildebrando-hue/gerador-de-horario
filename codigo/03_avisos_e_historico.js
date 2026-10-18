@@ -67,7 +67,7 @@ function renderEnvio(){
   box.innerHTML=L.map(function(p){ var pr=ST.profs[p], env=ST.aviso.enviados[p];
     return '<div class="avrow"><div class="hd"><span class="dot" style="background:'+pr.cor+'"></span><b>'+esc(pr.nome)+'</b><span class="small">'+esc(pr.email||"sem e-mail")+" · "+esc(pr.cel||"sem celular")+"</span>"+(env?'<span class="small" style="color:var(--ok)">✓ '+esc(env)+"</span>":"")+
       '<span style="flex:1"></span><button class="btn sm" data-wa="'+p+'"'+(pr.cel?"":" disabled")+'>WhatsApp</button><button class="btn sm" data-em="'+p+'"'+(pr.email?"":" disabled")+'>E-mail</button><button class="btn sm" data-pdf="'+p+'">Baixar PDF</button></div>'+
-      '<textarea rows="7" data-tx="'+p+'">'+esc(msgDe(p))+"</textarea></div>"; }).join("");
+      '<textarea rows="7" data-tx="'+p+'" aria-label="Mensagem para '+esc(pr.nome)+'">'+esc(msgDe(p))+"</textarea></div>"; }).join("");
   box.querySelectorAll("textarea[data-tx]").forEach(function(t){ t.onchange=function(){ ST.aviso.edits[+t.dataset.tx]=t.value; save(); }; });
   box.querySelectorAll("[data-wa]").forEach(function(b){ b.onclick=function(){ var p=+b.dataset.wa, t=msgDe(p);
     enviarComPdf({canal:"whatsapp",doc:docProf(p),arquivo:"horario-"+ST.profs[p].nome+".pdf",texto:t,assunto:"Horário atualizado — "+instCurto(),url:urlWa(ST.profs[p].cel,t),box:"avMsgBox",ok:function(c){ marcarEnvio(p,"WhatsApp ("+c+")"); }}); }; });

@@ -72,9 +72,13 @@
     for (var q0 = 0; q0 < P; q0++) { maxDiaL.push(maxDia[q0] ? [{ n: maxDia[q0], w: W.maxDia }] : []); seqL.push([]); }
     var NPER = 4, posMask = new Int32Array(nDisc * NPER), posW = new Float64Array(nDisc);
     var spL = [], simL = []; for (var d0 = 0; d0 < nDisc; d0++) { spL.push([]); simL.push([]); }
+    // disciplina só em alguns dias: máscara dos dias proibidos por disciplina
+    var dayBad = new Int32Array(nDisc), dayW = new Float64Array(nDisc), dayTxt = []; for (var d1 = 0; d1 < nDisc; d1++) dayTxt.push("");
+    var DCURTO = ["Seg", "Ter", "Qua", "Qui", "Sex"];
     var hasSpread = false, hasSim = false;
     function profsOf(r) { if (r.p == null || r.p < 0) { var a = []; for (var i2 = 0; i2 < P; i2++) a.push(i2); return a; } return r.p < P ? [r.p] : []; }
-    function discsOf(r) { if (r.disc === "*") { var a = []; for (var i3 = 0; i3 < nDisc; i3++) a.push(i3); return a; } return (r.disc in discIds) ? [discIds[r.disc]] : []; }
+    function discsOf(r) { if (r.disc === "@recomp") { var rr = []; var RD = { "RAM": 1, "RAP": 1, "L.RAP": 1 }; Object.keys(discIds).forEach(function (k) { if (RD[k]) rr.push(discIds[k]); }); return rr; }
+      if (r.disc === "*") { var a = []; for (var i3 = 0; i3 < nDisc; i3++) a.push(i3); return a; } return (r.disc in discIds) ? [discIds[r.disc]] : []; }
     (opts.extras || []).forEach(function (r) {
       var w = RW(r.forca), n = +r.n || 0;
       if (r.tipo === "seguidas" && n > 0) profsOf(r).forEach(function (p) { seqL[p].push({ n: n, w: w }); });
@@ -86,13 +90,15 @@
         posW[d] = Math.max(posW[d], w);
       });
       else if (r.tipo === "espalhar") { hasSpread = true; discsOf(r).forEach(function (d) { spL[d].push({ dias: +r.dias || 3, min: +r.minAulas || 0, w: w }); }); }
+      else if (r.tipo === "dias") { var ok = 0; (r.dias || []).forEach(function (d) { if (d >= 0 && d <= 4) ok |= 1 << d; }); if (!ok || ok === 31) return;
+        discsOf(r).forEach(function (d) { dayBad[d] |= 31 & ~ok; dayW[d] = Math.max(dayW[d], w); var pode = []; for (var z = 0; z < 5; z++) if (!(dayBad[d] & (1 << z))) pode.push(DCURTO[z]); dayTxt[d] = pode.join(", "); }); }
       else if (r.tipo === "simult" && n > 0) { hasSim = true; discsOf(r).forEach(function (d) { simL[d].push({ n: n, w: w }); }); }
     });
     var secTS = D.secTS || TS.map(function () { return 0; });
     return { D: D, W: W, T: T, P: P, K: K, DK: DK, TS: TS, OVL: OVL, recess: D.recess || [], L: L, nA: nA, tsOf: tsOf, per: per,
       blk: blk, maxDia: maxDia, conc: conc, partners: partners, pares: pares, parA: parA, lr: lr, maxSame: opts.maxSamePerDay || 2, nDisc: nDisc, discIds: discIds,
       minBreak: opts.minBreak == null ? 15 : +opts.minBreak, NPER: NPER,
-      maxDiaL: maxDiaL, seqL: seqL, livre: livre, posMask: posMask, posW: posW, secTS: secTS,
+      maxDiaL: maxDiaL, seqL: seqL, livre: livre, posMask: posMask, posW: posW, dayBad: dayBad, dayW: dayW, dayTxt: dayTxt, secTS: secTS,
       spL: spL, hasSpread: hasSpread, simL: simL, hasSim: hasSim };
   }
 
@@ -178,6 +184,7 @@
       var li = row[d * n + a]; if (li < 0) continue;
       var l = M.L[li], k = ids.indexOf(l.d);
       if (M.posMask[l.d * M.NPER + pq] & (1 << a)) cost += M.posW[l.d];
+      if (M.dayBad[l.d] & (1 << d)) cost += M.dayW[l.d];
       if (k < 0) { ids.push(l.d); cnt.push(1); adj.push(0); first.push(li); k = ids.length - 1; } else cnt[k]++;
       if (a > 0) { var pl = row[d * n + a - 1]; if (pl >= 0 && M.L[pl].d === l.d) { adj[k]++; if (a >= n - 2) cost += W.gemLate; } }
     }
@@ -325,6 +332,7 @@
         for (var a = 0; a < n; a++) { var li3 = S.g[t3][d3 * n + a]; if (li3 < 0) continue; var l3 = M.L[li3]; c[l3.disc] = (c[l3.disc] || 0) + 1; fl[l3.disc] = l3;
           if (a > 0) { var pl = S.g[t3][d3 * n + a - 1]; if (pl >= 0 && M.L[pl].d === l3.d) adj[l3.disc] = 1; }
           if (M.posMask[l3.d * M.NPER + M.per[t3]] & (1 << a)) out.push({ loc: { t: t3, d: d3, disc: l3.disc }, tipo: tipo(M.posW[l3.d]), txt: D.turmas[t3].nome + ": " + l3.disc + " na " + (a + 1) + "ª aula de " + DIAS[d3] + " (regra de posição)" });
+          if (M.dayBad[l3.d] & (1 << d3)) out.push({ loc: { t: t3, d: d3, disc: l3.disc }, tipo: tipo(M.dayW[l3.d]), txt: D.turmas[t3].nome + ": " + l3.disc + " na " + (a + 1) + "ª aula de " + DIAS[d3] + " (regra de dias: só " + M.dayTxt[l3.d] + ")" });
           if (M.spL[l3.d].length) { var o = seen[l3.disc] || (seen[l3.disc] = { n: 0, mask: 0, d: l3.d }); o.n++; o.mask |= 1 << d3; }
         }
         Object.keys(c).forEach(function (disc) {

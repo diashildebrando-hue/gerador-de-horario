@@ -329,6 +329,7 @@ function mascaraFone(el){ var d=el.value.replace(/\D/g,""); if(d.length>11&&d.in
   if(d.length>6) r="("+d.slice(0,2)+") "+d.slice(2,d.length===11?7:6)+"-"+d.slice(d.length===11?7:6);
   el.value=r; }
 function renderProfs(){
+  if(typeof fmIniciar==="function") fmIniciar();
   var q=(document.getElementById("pBusca").value||"").toLowerCase(), tm=TM();
   var cnt=ST.profs.map(function(){ return 0; }); ST.matriz.forEach(function(r){ cnt[r.p]+=r.n; });
   document.getElementById("pList").innerHTML=ST.profs.map(function(p,i){return i;}).sort(function(a,b){ return ST.profs[a].nome.localeCompare(ST.profs[b].nome); }).filter(function(i){ var p=ST.profs[i]; if(p.nome==="(excluído)"&&q.indexOf("exclu")<0) return false; return !q||p.nome.toLowerCase().indexOf(q)>=0||(p.completo||"").toLowerCase().indexOf(q)>=0; }).map(function(i){
@@ -409,15 +410,19 @@ document.getElementById("pAdd").onclick=function(){
   PSEL=ST.profs.length-1; document.getElementById("pNovo").value=""; save(); _filled=false; CACHE=null; renderProfs();
 };
 function hex2rgb(h){ h=h.replace("#",""); return [parseInt(h.slice(0,2),16),parseInt(h.slice(2,4),16),parseInt(h.slice(4,6),16)]; }
+// contraste do texto escuro da grade (#17212b) sobre a cor do professor: precisa ser pelo menos 4,5 (leitura fácil)
+function corLum(h){ return hex2rgb(h).map(function(v){ v/=255; return v<=0.03928?v/12.92:Math.pow((v+0.055)/1.055,2.4); }).reduce(function(s,v,i){ return s+v*[0.2126,0.7152,0.0722][i]; },0); }
+function corContraste(h){ var a=corLum(h), b=corLum("#17212b"); return (Math.max(a,b)+0.05)/(Math.min(a,b)+0.05); }
+function corLegivel(h){ var c=h, n=0; while(corContraste(c)<4.6&&n<20){ var r=hex2rgb(c).map(function(v){ return Math.min(255,Math.round(v+(255-v)*0.12)); }); c="#"+r.map(function(v){ return ("0"+v.toString(16)).slice(-2); }).join(""); n++; } return c; }
 function corDist(a,b){ var x=hex2rgb(a), y=hex2rgb(b); var rm=(x[0]+y[0])/2, dr=x[0]-y[0], dg=x[1]-y[1], db=x[2]-y[2]; return Math.sqrt((2+rm/256)*dr*dr+4*dg*dg+(2+(255-rm)/256)*db*db); }
 function sortearCores(n){
   var cores=[], tent=0, minD=70;
-  while(cores.length<n && tent<20000){ tent++;
+  while(cores.length<n && tent<20000){ tent++; if(tent%2000===0) minD-=6;
     var c=hsl2hex(Math.random(), 0.45+Math.random()*0.4, 0.70+Math.random()*0.16);
+    if(corContraste(c)<4.6) continue;
     if(cores.every(function(x){ return corDist(x,c)>=minD; })) cores.push(c);
-    if(tent%2000===0) minD-=6;
   }
-  while(cores.length<n) cores.push(hsl2hex(cores.length*0.618%1,0.6,0.8));
+  while(cores.length<n) cores.push(corLegivel(hsl2hex(cores.length*0.618%1,0.6,0.8)));
   return cores;
 }
 document.getElementById("pCores").onclick=function(){ var c=sortearCores(ST.profs.length); ST.profs.forEach(function(p,i){ p.cor=c[i]; }); logar("Professor","Cores de todos os professores sorteadas de novo"); save(); renderProfs(); };
@@ -574,15 +579,17 @@ function camposExtra(){
   if(t==="seguidas"||t==="maxdia") h='<label>Professor<br><select id="xP">'+profOpts(true)+'</select></label><label>Máximo<br><input type="number" id="xN" min="1" max="12" value="'+(t==="seguidas"?4:8)+'"></label>';
   else if(t==="dialivre") h='<label>Professor<br><select id="xP">'+profOpts(true)+"</select></label>";
   else if(t==="posicao"){ var a=[]; for(var i=1;i<=maxN;i++) a.push(i); h='<label>Disciplina<br><select id="xD">'+discOpts(false)+'</select></label><label>Período<br><select id="xTu"><option value="-1">Todos</option>'+PERIODOS.map(function(p,i){ return '<option value="'+i+'">'+p+"</option>"; }).join("")+'</select></label><span class="small">Não pode na:<br>'+a.map(function(a){ return '<label class="small" style="margin-right:6px"><input type="checkbox" class="xA" value="'+a+'"'+(a===1?" checked":"")+"> "+a+"ª</label>"; }).join("")+"</span>"; }
+  else if(t==="dias") h='<label>Disciplina<br><select id="xD"><option value="@recomp">Recomposição (RAM, RAP, L.RAP)</option>'+discOpts(false)+'</select></label><span class="small">Pode ter aula só na:<br>'+DIAS.map(function(dn,d){ return '<label class="small" style="margin-right:6px"><input type="checkbox" class="xDia" value="'+d+'"'+(d>=1&&d<=3?" checked":"")+"> "+dn+"</label>"; }).join("")+"</span>";
   else if(t==="espalhar") h='<label>Disciplina<br><select id="xD">'+discOpts(true)+'</select></label><label>Mínimo de dias<br><input type="number" id="xDias" min="2" max="5" value="3"></label><label>Quando tiver a partir de<br><input type="number" id="xMinA" min="2" max="12" value="4"> aulas</label>';
   else if(t==="simult") h='<label>Disciplina<br><select id="xD">'+discOpts(false)+'</select></label><label>Máximo de turmas<br><input type="number" id="xN" min="1" max="10" value="2"></label>';
   document.getElementById("xCampos").innerHTML=h;
   if(t==="simult"){ var sel=document.getElementById("xD"); if([].some.call(sel.options,function(o){return o.value==="ED.FIS";})) sel.value="ED.FIS"; }
 }
 function descExtra(r){
-  var quem=r.p==null||r.p<0?"todos os professores":pnome(r.p), dis=r.disc==="*"?"todas as disciplinas":r.disc;
+  var quem=r.p==null||r.p<0?"todos os professores":pnome(r.p), dis=r.disc==="*"?"todas as disciplinas":r.disc==="@recomp"?"Recomposição (RAM, RAP, L.RAP)":r.disc;
   return {seguidas:"No máximo "+r.n+" aulas seguidas — "+quem, maxdia:"No máximo "+r.n+" aulas por dia — "+quem, dialivre:"Pelo menos 1 dia sem aula — "+quem,
     posicao:dis+" não pode na "+(r.aulas||[]).map(function(a){return a+"ª";}).join(", ")+" aula"+(r.turno>=0?" ("+PERIODOS[r.turno].toLowerCase()+")":""),
+    dias:dis+" só na "+(r.dias||[]).slice().sort().map(function(d){ return DIAS[d]; }).join(", "),
     espalhar:dis+": espalhar em pelo menos "+r.dias+" dias (quando tiver "+r.minAulas+" aulas ou mais)", simult:"No máximo "+r.n+" turmas com "+dis+" ao mesmo tempo"}[r.tipo]||r.tipo;
 }
 document.getElementById("xTipo").onchange=camposExtra;
@@ -592,9 +599,12 @@ document.getElementById("xAdd").onclick=function(){
   if(g("xP")!=null) r.p=+g("xP"); if(g("xN")!=null) r.n=+g("xN"); if(g("xD")!=null) r.disc=g("xD");
   if(t==="posicao"){ r.turno=+g("xTu"); r.aulas=[].slice.call(document.querySelectorAll(".xA:checked")).map(function(x){return +x.value;}); if(!r.aulas.length) return; }
   if(t==="espalhar"){ r.dias=+g("xDias"); r.minAulas=+g("xMinA"); }
+  if(t==="dias"){ r.dias=[].slice.call(document.querySelectorAll(".xDia:checked")).map(function(x){ return +x.value; }); if(!r.dias.length||r.dias.length===5){ alertaRegra(r.dias.length?"Com os 5 dias marcados a regra não muda nada. Desmarque os dias em que essa disciplina não pode.":"Marque pelo menos um dia."); return; } }
   ST.extras.push(r); logar("Regras","Nova regra ("+(r.forca==="rigida"?"rígida":"preferência")+"): "+descExtra(r)); save(); CACHE=null; renderRegras();
 };
+function alertaRegra(txt){ var c=document.getElementById("xCampos"); var m=document.getElementById("xMsg"); if(!m){ m=document.createElement("div"); m.id="xMsg"; c.parentNode.insertBefore(m,c.nextSibling); } m.innerHTML='<div class="msg warn">'+esc(txt)+"</div>"; }
 function renderRegras(){
+  var xm=document.getElementById("xMsg"); if(xm) xm.innerHTML="";
   fillSelectsOnce();
   var R=ST.regras; document.getElementById("rMax").value=R.max; document.getElementById("rMin").value=R.minBreak;
   [["rTwo","two"],["rPar","par"],["rLate","late"],["rCross","cross"],["rGap","gap"],["rSep","sep"],["rInt","intervalo"]].forEach(function(x){ document.getElementById(x[0]).checked=!!R[x[1]]; });
